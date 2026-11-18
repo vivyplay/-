@@ -37,12 +37,22 @@
   {
     "test": "第二阶段全部新页签可打开",
     "passed": true,
+    "detail": "页签=True；版本文本=True"
+  },
+  {
+    "test": "界面录制修改快捷键并立即注册",
+    "passed": true,
+    "detail": "输入框=Ctrl + Alt + F11；保存修饰键=3；保存按键=122；系统注册=True"
+  },
+  {
+    "test": "界面恢复默认快捷键并保存",
+    "passed": true,
     "detail": null
   },
   {
     "test": "深色主题实际应用并保存",
     "passed": true,
-    "detail": "浅色亮度 228.8，深色亮度 55.7"
+    "detail": "浅色亮度 232.6，深色亮度 59.6"
   },
   {
     "test": "深色主题 ComboBox 选项可见",
@@ -108,6 +118,71 @@
     "test": "模型缺失不启动录音且悬浮球显示错误",
     "passed": true,
     "detail": null
+  },
+  {
+    "test": "主界面 AI 默认关闭",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 主面板实际打开",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "配置不完整时开启 AI 有明确提示且不改变状态",
+    "passed": true,
+    "detail": "提示=True；开关=Off；窗口=随声输入 · 悬浮球/ControlType.Window | 随声输入 · AI 提示词优化/ControlType.Window | 随声输入/ControlType.Window"
+  },
+  {
+    "test": "真实界面保存 AI 配置及 DPAPI 密钥",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "界面发起真实回环 Chat Completions 连接测试",
+    "passed": true,
+    "detail": "确认=True；成功=True；请求=1；状态=AI 连接成功 · 服务已按 OpenAI 兼容 Chat Completions 协议返回内容；这不代表后续优化结果已经确认或写入。"
+  },
+  {
+    "test": "AI 面板主面板与设置开关同步",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "模板界面新建保存及删除",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "真实界面请求后进入预览而非直接写入",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "确认编辑结果后重新验证目标且不向自身窗口误写",
+    "passed": true,
+    "detail": "确认=True；完成=True；状态=待手动输入；结果=人工编辑后的桌面结果"
+  },
+  {
+    "test": "关闭优化窗口后迟到结果不进入预览或写入",
+    "passed": true,
+    "detail": "状态=已取消 AI 优化；结果=关闭时取消原文；请求=3"
+  },
+  {
+    "test": "主面板设置及悬浮球 AI 状态同步关闭",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 关闭后界面禁止发送优化请求",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 面板深色主题实际应用",
+    "passed": true,
+    "detail": "深色亮度=59.0"
   },
   {
     "test": "重复启动仅保留原实例",

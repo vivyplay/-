@@ -14,7 +14,7 @@
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
     <Grid Margin="0,0,0,18"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
       <StackPanel><TextBlock Text="随声输入" FontSize="29" FontWeight="Bold"/><TextBlock Text="让想法自然落笔。按下快捷键，说出你想写的内容。" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,8,0,0"/></StackPanel>
-      <Border Grid.Column="1" Background="{DynamicResource AccentSoftBrush}" CornerRadius="12" Padding="14,8" VerticalAlignment="Center"><TextBlock Text="阶段 2  ·  本地优先" Foreground="{DynamicResource AccentBrush}" FontSize="12"/></Border>
+      <Border Grid.Column="1" Background="{DynamicResource AccentSoftBrush}" CornerRadius="12" Padding="14,8" VerticalAlignment="Center"><TextBlock Text="阶段 3  ·  本地优先 + 可选 AI" Foreground="{DynamicResource AccentBrush}" FontSize="12"/></Border>
     </Grid>
     <TabControl x:Name="Tabs" Grid.Row="1" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource TextPrimaryBrush}">
       <TabItem Header="语音输入"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="0,18,0,0">
@@ -26,6 +26,7 @@
           <TextBlock x:Name="DeviceText" Foreground="#CBB9FF" Margin="0,6,0,0"/>
         </StackPanel></Border>
         <WrapPanel Margin="0,16,0,18"><Button x:Name="RecordButton" Content="开始录音" Click="Record_Click" Background="#7452CF" Foreground="White" BorderThickness="0" Padding="24,11"/><Button x:Name="CancelButton" Content="取消任务" Click="Cancel_Click"/><Button x:Name="MicrophoneButton" Content="测试麦克风" Click="TestMicrophone_Click"/><Button Content="打开设置" Click="OpenSettings_Click"/></WrapPanel>
+        <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="12" Padding="14,10" Margin="0,0,0,16"><DockPanel><WrapPanel DockPanel.Dock="Right"><Button x:Name="OpenAiButton" Content="AI 提示词面板" Click="OpenAi_Click" VerticalAlignment="Center"/></WrapPanel><StackPanel><CheckBox x:Name="AiEnabledBox" Content="识别后使用 AI 优化（默认关闭）" Checked="AiEnabled_Click" Unchecked="AiEnabled_Click" Margin="0,0,0,3"/><TextBlock x:Name="AiStateText" Text="关闭时仅在本地处理，不发送优化请求。" Style="{StaticResource Hint}" FontSize="12"/></StackPanel></DockPanel></Border>
         <TextBlock Text="处理后结果 · 自动输入仅使用此文字" Style="{StaticResource Heading}" FontSize="16"/>
         <TextBox x:Name="ResultBox" Height="120" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" Margin="0,8,0,0"/>
         <TextBlock Text="原始识别 · 仅保留在本次内存中" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,12,0,5"/>
@@ -34,6 +35,10 @@
         <TextBlock Text="不保存录音。不自动发送、提交表单或执行命令；目标或光标改变时停止自动写入。" Style="{StaticResource Hint}" FontSize="12" Margin="0,14,0,8"/>
       </StackPanel></ScrollViewer></TabItem>
       <TabItem Header="模型与录音"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel x:Name="SettingsPanel" Margin="4,18,12,0">
+        <TextBlock Text="AI 提示词优化" Style="{StaticResource Heading}"/>
+        <TextBlock Text="与本地语音识别独立配置。开启后发送识别文字、优化要求和模板，不发送音频；结果默认预览确认。" Style="{StaticResource Hint}" Margin="0,6,0,4"/>
+        <DockPanel><Button x:Name="OpenAiSettingsButton" Content="打开 AI 配置与模板" DockPanel.Dock="Right" Click="OpenAi_Click"/><CheckBox x:Name="AiSettingsEnabledBox" Content="启用 AI 优化" Checked="AiEnabled_Click" Unchecked="AiEnabled_Click" VerticalAlignment="Center"/></DockPanel>
+        <Separator Margin="0,12"/>
         <TextBlock Text="离线识别模型" Style="{StaticResource Heading}"/><TextBlock Text="模型下载不发送音频。Tiny 适合试用但中文错字较多，Base 较大且通常更准确。" Style="{StaticResource Hint}" Margin="0,8,0,12"/>
         <ComboBox x:Name="ModelCombo" DisplayMemberPath="Name" SelectedValuePath="Id"/>
         <TextBlock Text="下载源（手动选择，不会自动切换）" Margin="0,12,0,6"/><ComboBox x:Name="SourceCombo"><ComboBoxItem Content="Hugging Face 官方源" Tag="official"/><ComboBoxItem Content="hf-mirror.com 第三方镜像 · 同一 SHA-256 校验" Tag="mirror"/></ComboBox>
@@ -50,6 +55,7 @@
         <CheckBox x:Name="SilenceDetectionBox" Content="检测到声音后，连续静音自动结束录音（阈值型，不是完整 VAD）"/>
         <DockPanel><TextBlock Text="静音等待秒数（0.5–10）" VerticalAlignment="Center"/><TextBox x:Name="SilenceSecondsBox" Width="110" HorizontalAlignment="Right"/></DockPanel>
         <TextBlock Text="全局快捷键 · 点击输入框后按下新组合" Margin="0,14,0,6"/><DockPanel><Button Content="恢复默认快捷键" DockPanel.Dock="Right" Click="DefaultHotkey_Click" Margin="10,0,0,0"/><TextBox x:Name="HotkeyBox" IsReadOnly="True" PreviewKeyDown="Hotkey_PreviewKeyDown"/></DockPanel>
+        <TextBlock x:Name="HotkeyHint" Text="至少同时按住 Ctrl、Alt、Shift 或 Win 中的一项，再按普通按键；保存后立即生效。" Style="{StaticResource Hint}" FontSize="12" Margin="0,6,0,0"/>
         <DockPanel Margin="0,14,0,0"><TextBlock Text="最长录音时间（5–600 秒）" VerticalAlignment="Center"/><TextBox x:Name="MaxSecondsBox" Width="110" HorizontalAlignment="Right"/></DockPanel>
         <CheckBox x:Name="CloseToTrayBox" Content="关闭主面板时最小化到托盘，保留悬浮球"/>
         <CheckBox x:Name="StartMinimizedBox" Content="打开软件时仅显示悬浮球和托盘"/>
@@ -98,12 +104,12 @@
       </StackPanel></ScrollViewer></TabItem>
       <TabItem Header="阶段与帮助"><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="8,24">
         <TextBlock Text="先把基础做好，再逐阶段扩展。" FontSize="23" FontWeight="SemiBold"/>
-        <TextBlock Style="{StaticResource Hint}" LineHeight="27" Margin="0,18,0,0" Text="当前版本 0.2.0 · 第二阶段&#10;本地识别、切换/按住说话、阈值型静音检测、词语替换、安全写入、外观主题、可选历史。&#10;&#10;后续阶段&#10;外部 AI API、可编辑提示词模板、原文/优化结果确认、正式安装卸载和更多应用兼容性回归。当前没有 AI 模块，不会把识别文本发送到云端。"/>
+        <TextBlock Style="{StaticResource Hint}" LineHeight="27" Margin="0,18,0,0" Text="当前版本 0.3.1 · AI 优化阶段&#10;本地识别、按住说话、词语替换、安全写入、主题、可选历史，以及默认关闭的真实外部 AI 提示词优化。&#10;&#10;AI 使用说明&#10;支持 OpenAI 兼容 Chat Completions 完整接口。原文与结果分区保留，可编辑、复制、取消或使用原文。内置通用、简洁、详细任务、编程和仅纠错润色模板，也可新建、修改和删除模板。密钥由 Windows DPAPI 当前用户加密。&#10;&#10;AI 开启且发送优化前，会明确提示文字将发送到所配置服务并可能产生费用；优化结果必须确认后才重新验证输入位置并写入。AI 关闭或配置不完整时，普通本地语音输入仍可使用。"/>
         <Separator Margin="0,22"/>
         <TextBlock Text="使用提示" FontSize="17" FontWeight="SemiBold"/><TextBlock Style="{StaticResource Hint}" LineHeight="26" Margin="0,10,0,0" Text="1. 准备模型并测试麦克风。在记事本空白测试页放好光标。&#10;2. 切换模式按一次开始、再按一次结束；按住模式仅对快捷键生效。&#10;3. 悬浮球左键单击切换、拖动移动、右键打开菜单。&#10;4. 静音检测是简单音量阈值，可能受环境噪音影响，请实测后再启用。&#10;5. 文字替换在识别后发生；不会上传原文，也不会把替换表当作模型热词。&#10;&#10;Esc 仅在活动录音/识别任务中注册。无法可靠验证的控件、密码框、只读框和已变化的目标不会自动写入。自动输入提交成功不等于应用已正确接收，请检查结果。Windows 10、多显示器及真人麦克风需要对应环境实测。"/>
         <TextBlock Text="开源组件" FontSize="17" FontWeight="SemiBold" Margin="0,24,0,8"/><TextBlock Style="{StaticResource Hint}" Text="NAudio 2.2.1 · MIT&#10;Whisper.net / whisper.cpp · MIT&#10;Whisper 模型 · MIT&#10;完整许可文本随运行包提供。无在线更新服务。"/>
       </StackPanel></ScrollViewer></TabItem>
     </TabControl>
-    <DockPanel Grid.Row="2" Margin="0,18,0,0"><Button x:Name="SaveButton" Content="保存所有设置" DockPanel.Dock="Right" Click="Save_Click" Background="#7452CF" Foreground="White" BorderThickness="0" Margin="12,0,0,0"/><TextBlock Text="本地处理  /  不存录音  /  不自动发送" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" VerticalAlignment="Center"/><TextBlock Text="SUISHENG  ·  0.2.0" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0"/></DockPanel>
+    <DockPanel Grid.Row="2" Margin="0,18,0,0"><Button x:Name="SaveButton" Content="保存所有设置" DockPanel.Dock="Right" Click="Save_Click" Background="#7452CF" Foreground="White" BorderThickness="0" Margin="12,0,0,0"/><TextBlock Text="本地处理  /  不存录音  /  不自动发送" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" VerticalAlignment="Center"/><TextBlock Text="SUISHENG  ·  0.3.1" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="20,0,0,0"/></DockPanel>
   </Grid>
 </Window>

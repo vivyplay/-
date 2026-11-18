@@ -35,6 +35,11 @@
     "detail": null
   },
   {
+    "test": "全局热键修改后旧键释放且新键生效",
+    "passed": true,
+    "detail": null
+  },
+  {
     "test": "暂停和恢复热键",
     "passed": true,
     "detail": null
@@ -67,12 +72,12 @@
   {
     "test": "本地 CPU 真实识别 en",
     "passed": true,
-    "detail": "合成音频结果：Hello. This is a voice input test. The software converts speech into text.；耗时 0.70s"
+    "detail": "合成音频结果：Hello. This is a voice input test. The software converts speech into text.；耗时 0.44s"
   },
   {
     "test": "本地 CPU 真实识别 zh",
     "passed": true,
-    "detail": "合成音频结果：你好,这是一个语音收入词事我们正在词是软件的本地时别功能；耗时 0.57s"
+    "detail": "合成音频结果：你好,这是一个语音收入词事我们正在词是软件的本地时别功能；耗时 0.46s"
   },
   {
     "test": "排队中的识别可取消（第 1 次）",
@@ -82,7 +87,7 @@
   {
     "test": "识别任务启动后取消且不返回文本（第 1 次）",
     "passed": true,
-    "detail": "取消等待 0.98s"
+    "detail": "取消等待 0.50s"
   },
   {
     "test": "排队中的识别可取消（第 2 次）",
@@ -92,7 +97,7 @@
   {
     "test": "识别任务启动后取消且不返回文本（第 2 次）",
     "passed": true,
-    "detail": "取消等待 0.07s"
+    "detail": "取消等待 0.51s"
   },
   {
     "test": "排队中的识别可取消（第 3 次）",
@@ -102,7 +107,7 @@
   {
     "test": "识别任务启动后取消且不返回文本（第 3 次）",
     "passed": true,
-    "detail": "取消等待 0.11s"
+    "detail": "取消等待 0.55s"
   },
   {
     "test": "取消后仍可识别 Base 中文关键词",
@@ -170,22 +175,37 @@
     "detail": null
   },
   {
-    "test": "按住说话未真正按下不误停",
+    "test": "临时记事本目标捕获",
     "passed": true,
     "detail": null
   },
   {
-    "test": "按住说话松键只结束一次",
+    "test": "记事本完整 Unicode 实际接收",
+    "passed": true,
+    "detail": "提交=True；预期=1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。；实际=1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。；文件=C:\\Users\\23309\\Documents\\Qoder\\2026-11-17\\59db6f65\\tests\\notepad-write-96a61f08a14a4ee9ae3cfe05f057f598.txt；程序集=C:\\Users\\23309\\Documents\\Qoder\\2026-11-17\\59db6f65\\tests\\bin\\Debug\\net10.0-windows\\win-x64\\Suisheng.dll"
+  },
+  {
+    "test": "按住说话未触发时不轮询或误停",
     "passed": true,
     "detail": null
   },
   {
-    "test": "按住说话结束后停止轮询",
+    "test": "按住说话重复消息及任务结束不重复触发",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "按住说话松键后停止轮询",
     "passed": true,
     "detail": null
   },
   {
     "test": "真实全局按键长按不重复触发且松键结束一次",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "休眠及唤醒均要求取消活动任务",
     "passed": true,
     "detail": null
   },
@@ -351,6 +371,141 @@
   },
   {
     "test": "非法图片不破坏原有形象",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 默认关闭且普通设置不包含接口配置依赖",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 非敏感配置保存及范围校验",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "公网明文 HTTP 接口拒绝",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "接口 URL 用户信息拒绝",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "DPAPI 当前用户密钥往返及密文落盘",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 密钥可明确删除",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "五种真实内置 AI 模板",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "自定义 AI 模板新建与持久化",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "恢复内置模板及删除自定义模板",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "损坏 AI 模板不被静默覆盖",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "OpenAI 兼容真实 HTTP 请求格式与原文来源",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "OpenAI 兼容响应正文解析",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 无效密钥错误分类",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 额度错误分类且不自动重试",
+    "passed": true,
+    "detail": "请求次数=1"
+  },
+  {
+    "test": "AI 模型不可用错误分类",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 限流错误分类",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 空响应明确拒绝",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 异常格式明确拒绝",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 请求用户取消",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 超时分类且不自动重试",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 完成后默认停留待确认且不写入",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 预览结果可编辑且原文不变",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "取消待确认保留结果并回到待机",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "优化中关闭 AI 取消并忽略迟到结果",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 关闭时手动优化不发送请求",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "AI 失败保留原文且普通会话可恢复",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "关闭 AI 不要求有效 API 配置",
     "passed": true,
     "detail": null
   }

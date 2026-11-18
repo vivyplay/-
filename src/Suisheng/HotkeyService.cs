@@ -11,7 +11,7 @@ public sealed class HotkeyService : IDisposable
     private readonly HwndSource source;
     private int activeId = 101;
     private uint modifiers, key;
-    private bool registered, escape, holdMode, holdActive, pressSeen;
+    private bool registered, escape, holdMode, holdActive;
     private readonly Func<int, short> keyState;
     private readonly DispatcherTimer holdTimer;
     public bool Paused { get; private set; }
@@ -34,15 +34,12 @@ public sealed class HotkeyService : IDisposable
     {
         holdMode = hold;
         holdActive = false;
-        pressSeen = false;
         holdTimer.Stop();
     }
 
     private void CheckRelease()
     {
-        if (!holdActive) return;
-        if (IsPressed(modifiers, key)) { pressSeen = true; return; }
-        if (!pressSeen) return;
+        if (!holdActive || IsPressed(modifiers, key)) return;
         holdActive = false;
         holdTimer.Stop();
         Released?.Invoke();
@@ -85,8 +82,6 @@ public sealed class HotkeyService : IDisposable
     {
         if (escape) NativeMethods.UnregisterHotKey(source.Handle, 103);
         escape = active && NativeMethods.RegisterHotKey(source.Handle, 103, 0x4000, 0x1B);
-        if (active && holdMode) { holdActive = true; holdTimer.Start(); }
-        else { holdActive = false; pressSeen = false; holdTimer.Stop(); }
         return !active || escape;
     }
 
@@ -95,7 +90,19 @@ public sealed class HotkeyService : IDisposable
         if ((uint)message == ActivateMessage) { ShowRequested?.Invoke(); handled = true; }
         if (message == NativeMethods.WM_HOTKEY)
         {
-            if (wparam == activeId && !Paused) { pressSeen = IsPressed(modifiers, key); Triggered?.Invoke(); }
+            if (wparam == activeId && !Paused)
+            {
+                if (holdMode)
+                {
+                    if (!holdActive)
+                    {
+                        holdActive = true;
+                        holdTimer.Start();
+                        Triggered?.Invoke();
+                    }
+                }
+                else Triggered?.Invoke();
+            }
             if (wparam == 103) Cancelled?.Invoke();
             handled = true;
         }
@@ -116,6 +123,8 @@ public sealed class HotkeyService : IDisposable
     public void Dispose()
     {
         SetTaskActive(false);
+        holdActive = false;
+        holdTimer.Stop();
         if (registered) NativeMethods.UnregisterHotKey(source.Handle, activeId);
         source.RemoveHook(Hook);
         source.Dispose();

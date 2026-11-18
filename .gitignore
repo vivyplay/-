@@ -13,10 +13,17 @@ dist/
 # Desktop test isolation and temporary data
 tests/desktop-data-*/
 tests/isolated-*/
+tests/ai-contract-*/
 tests/stage2-*/
+tests/stage2-ai-*.png
+tests/ai-contract-results.json
+tests/notepad-write-*.txt
+tests/notepad-unicode-probe.*
 tests/dialog-*.png
 tests/stage2-invalid.png
 tests/stage2-release-invalid.png
+tests/stage3-invalid.png
+tests/stage3-release-invalid.png
 
 # Partial writes and local archives
 *.new

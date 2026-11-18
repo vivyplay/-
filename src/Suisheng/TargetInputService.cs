@@ -136,16 +136,19 @@ public sealed class TargetInputService : IDisposable
             cancellation.ThrowIfCancellationRequested();
             if (!valid || target.Changed || NativeMethods.GetForegroundWindow() != target.Window)
                 return new(false, "输入目标或光标已变化，已阻止自动写入。请复制结果。");
-            var inputs = text.SelectMany(c => new[]
-            {
-                new NativeMethods.Input { Type = 1, Data = new() { Keyboard = new() { Scan = c, Flags = NativeMethods.KEYEVENTF_UNICODE } } },
-                new NativeMethods.Input { Type = 1, Data = new() { Keyboard = new() { Scan = c, Flags = NativeMethods.KEYEVENTF_UNICODE | NativeMethods.KEYEVENTF_KEYUP } } }
-            }).ToArray();
             tracking = null;
-            uint sent = NativeMethods.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<NativeMethods.Input>());
-            return sent == inputs.Length
-                ? new(true, "文字输入事件已提交，请检查目标应用；结果仍可复制。")
-                : new(false, "系统未完整接受输入，可能是权限限制。请检查目标内容后手动复制，避免重复。");
+            foreach (char c in text)
+            {
+                var inputs = new[]
+                {
+                    new NativeMethods.Input { Type = 1, Data = new() { Keyboard = new() { Scan = c, Flags = NativeMethods.KEYEVENTF_UNICODE } } },
+                    new NativeMethods.Input { Type = 1, Data = new() { Keyboard = new() { Scan = c, Flags = NativeMethods.KEYEVENTF_UNICODE | NativeMethods.KEYEVENTF_KEYUP } } }
+                };
+                uint sent = NativeMethods.SendInput(2, inputs, Marshal.SizeOf<NativeMethods.Input>());
+                if (sent != 2) return new(false, "系统未完整接受输入，可能是权限限制。请检查目标内容后手动复制，避免重复。");
+                await Task.Delay(1, cancellation);
+            }
+            return new(true, "文字输入事件已提交，请检查目标应用；结果仍可复制。");
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception e) when (e is ElementNotAvailableException or InvalidOperationException or COMException or TimeoutException or UnauthorizedAccessException)

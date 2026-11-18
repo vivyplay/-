@@ -18,7 +18,16 @@ internal static class Stage2DesktopTests
 {
     public static async Task Run(AutomationElement panel, AutomationElement ball, Process process, string root, string dataDirectory, string screenshotPrefix)
     {
-        AutomationElement Find(string id) => Require(panel.FindFirst(TreeScope.Descendants, new PropertyCondition(AutomationElement.AutomationIdProperty, id)), id);
+        AutomationElement Find(string id)
+        {
+            for (int attempt = 0; attempt < 30; attempt++)
+            {
+                var element = panel.FindFirst(TreeScope.Descendants, new PropertyCondition(AutomationElement.AutomationIdProperty, id));
+                if (element != null) return element;
+                System.Threading.Thread.Sleep(60);
+            }
+            return Require(null, id);
+        }
         var tabs = new (string Name, string Anchor)[] { ("语音输入", "StatusText"), ("模型与录音", "ModelDirectoryBox"), ("文字处理", "ReplacementRulesBox"), ("悬浮球外观", "AvatarStatus"), ("历史与隐私", "HistoryList") };
         bool tabsOpened = true;
         foreach (var tab in tabs)
@@ -27,8 +36,35 @@ internal static class Stage2DesktopTests
             tabsOpened &= Find(tab.Anchor) != null;
         }
         await SelectTab(panel, "阶段与帮助");
-        bool versionVisible = panel.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text)).Cast<AutomationElement>().Any(element => element.Current.Name.Contains("当前版本 0.2.0"));
-        Program.Record("第二阶段全部新页签可打开", tabsOpened && versionVisible);
+        bool versionVisible = panel.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text)).Cast<AutomationElement>().Any(element => element.Current.Name.Contains("当前版本 0.3.1"));
+        Program.Record("第二阶段全部新页签可打开", tabsOpened && versionVisible, $"页签={tabsOpened}；版本文本={versionVisible}");
+
+        await SelectTab(panel, "模型与录音");
+        var hotkeyBox = Find("HotkeyBox");
+        hotkeyBox.SetFocus(); await Task.Delay(200);
+        PhysicalClick(hotkeyBox);
+        SendCombo(0x7A);
+        await Task.Delay(250);
+        string capturedHotkey = ((ValuePattern)hotkeyBox.GetCurrentPattern(ValuePattern.Pattern)).Current.Value;
+        Click(Find("SaveButton")); await Task.Delay(350);
+        var changedHotkey = ReadSettings(dataDirectory);
+        bool replacementRegistered = false;
+        if (changedHotkey.HotkeyKey == 0x7A)
+        {
+            using var probe = new HotkeyService();
+            replacementRegistered = !probe.TrySet(3, 0x7A);
+        }
+        bool hotkeyCaptureSaved = capturedHotkey.Contains("F11") && changedHotkey.HotkeyModifiers == 3 && changedHotkey.HotkeyKey == 0x7A && replacementRegistered;
+        if (!hotkeyCaptureSaved) Capture(panel, Path.Combine(root, screenshotPrefix + "-hotkey-failure.png"));
+        Program.Record("界面录制修改快捷键并立即注册", hotkeyCaptureSaved, $"输入框={capturedHotkey}；保存修饰键={changedHotkey.HotkeyModifiers}；保存按键={changedHotkey.HotkeyKey}；系统注册={replacementRegistered}");
+        if (changedHotkey.HotkeyKey == 0x7A)
+        {
+            hotkeyBox.SetFocus(); await Task.Delay(150); PhysicalClick(hotkeyBox); SendCombo(0x20); await Task.Delay(200);
+        }
+        else Click(FindByName(panel, "恢复默认快捷键", ControlType.Button));
+        Click(Find("SaveButton")); await Task.Delay(300);
+        var restoredHotkey = ReadSettings(dataDirectory);
+        Program.Record("界面恢复默认快捷键并保存", restoredHotkey.HotkeyModifiers == 3 && restoredHotkey.HotkeyKey == 0x20);
 
         await SelectTab(panel, "悬浮球外观");
         panel.SetFocus(); await Task.Delay(150);
@@ -279,6 +315,21 @@ internal static class Stage2DesktopTests
         SetCursorPos(x, y); mouse_event(0x0002, 0, 0, 0, 0);
         for (int i = 1; i <= 6; i++) { SetCursorPos(x + deltaX * i / 6, y + deltaY * i / 6); System.Threading.Thread.Sleep(25); }
         mouse_event(0x0004, 0, 0, 0, 0);
+    }
+
+    private static void PhysicalClick(AutomationElement element)
+    {
+        var rect = element.Current.BoundingRectangle;
+        SetCursorPos((int)(rect.X + rect.Width / 2), (int)(rect.Y + rect.Height / 2));
+        mouse_event(0x0002, 0, 0, 0, 0); mouse_event(0x0004, 0, 0, 0, 0);
+    }
+
+    private static void SendCombo(ushort key)
+    {
+        var keys = new[] { (Key: (ushort)0x11, Up: false), (Key: (ushort)0x12, Up: false), (Key: key, Up: false), (Key: key, Up: true), (Key: (ushort)0x12, Up: true), (Key: (ushort)0x11, Up: true) };
+        var inputs = keys.Select(item => new NativeMethods.Input { Type = 1, Data = new NativeMethods.InputUnion { Keyboard = new NativeMethods.KeyboardInput { VirtualKey = item.Key, Flags = item.Up ? NativeMethods.KEYEVENTF_KEYUP : 0 } } }).ToArray();
+        if (NativeMethods.SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<NativeMethods.Input>()) != (uint)inputs.Length)
+            throw new InvalidOperationException("无法发送快捷键测试按键");
     }
 
     private static void TypeText(string text)

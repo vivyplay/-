@@ -7,7 +7,7 @@ using System.Windows.Threading;
 
 namespace Suisheng;
 
-public enum SessionPhase { Idle, Preparing, Recording, Recognizing, Writing, Downloading, Cancelling }
+public enum SessionPhase { Idle, Preparing, Recording, Recognizing, Optimizing, AwaitingConfirmation, Writing, Downloading, Cancelling }
 
 public sealed class SessionController : IDisposable
 {
@@ -16,6 +16,9 @@ public sealed class SessionController : IDisposable
     private readonly RecognitionService recognizer = new();
     private readonly TargetInputService input = new();
     public HistoryStore History { get; } = new();
+    public AiCredentialStore AiCredentials { get; } = new();
+    public AiTemplateStore AiTemplates { get; } = new();
+    private readonly OpenAiCompatibleClient aiClient = new();
     private CancellationTokenSource? cancellation;
     private TaskCompletionSource? finished;
     private InputTarget? target;
@@ -35,6 +38,7 @@ public sealed class SessionController : IDisposable
     public event Action? Changed;
     public event Action? ShowRequested;
     public event Action<string>? SettingsApplied;
+    public event Action<bool>? AiPanelRequested;
 
     public SessionController(Dispatcher dispatcher)
     {
@@ -45,7 +49,12 @@ public sealed class SessionController : IDisposable
             Detail = "默认快捷键已被占用，请在设置中更换；仍可使用悬浮球。";
         else if (Store.LoadWarning != null) Detail = Store.LoadWarning;
         Hotkeys.Triggered += () => _ = ToggleAsync();
-        Hotkeys.Released += () => { if (Settings.RecordingMode == "hold" && Phase == SessionPhase.Recording) _ = StopAsync(); };
+        Hotkeys.Released += () =>
+        {
+            if (Settings.RecordingMode != "hold") return;
+            if (Phase == SessionPhase.Recording) _ = StopAsync();
+            else if (Phase == SessionPhase.Preparing) _ = CancelAsync();
+        };
         Hotkeys.Cancelled += () => _ = CancelAsync();
         Hotkeys.ShowRequested += () => ShowRequested?.Invoke();
         recorder.Meter += (level, seconds) => dispatcher.BeginInvoke(() =>
@@ -71,11 +80,11 @@ public sealed class SessionController : IDisposable
         if (!Busy) await StartAsync(true);
     }
 
-    private void Begin(SessionPhase phase, string status)
+    private void Begin(SessionPhase phase, string status, string? detail = null)
     {
         cancellation = new CancellationTokenSource();
         finished = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        SetPhase(phase, status);
+        SetPhase(phase, status, detail);
     }
 
     private async Task StartAsync(bool test)
@@ -119,8 +128,15 @@ public sealed class SessionController : IDisposable
             if (string.IsNullOrWhiteSpace(original)) { Finish("未识别到文字", "可尝试更换语言或使用 Base 模型。"); return; }
             string result = TextProcessingService.Process(original, Settings);
             if (string.IsNullOrWhiteSpace(result)) { Finish("处理后无文字", "原结果未自动写入；请检查可选的口语词清理设置。"); return; }
-            OriginalResult = Settings.KeepOriginalResult ? original : "";
+            OriginalResult = Settings.AiEnabled || Settings.KeepOriginalResult ? original : "";
             Result = result;
+            if (Settings.AiEnabled)
+            {
+                SetPhase(SessionPhase.Optimizing, "正在 AI 优化", "仅将本次识别文字、优化要求和所选模板发送到你配置的 AI 服务；不发送音频。Esc 可取消。");
+                AiPanelRequested?.Invoke(true);
+                await OptimizeCoreAsync(result, token);
+                return;
+            }
             SetPhase(SessionPhase.Writing, "正在验证输入位置");
             var outcome = await input.WriteAsync(target, result, token);
             token.ThrowIfCancellationRequested();
@@ -128,13 +144,128 @@ public sealed class SessionController : IDisposable
             Finish(outcome.Submitted ? "已提交输入" : "待手动输入", outcome.Message + (audio.EndedBySilence ? " 本次由静音检测结束录音。" : "") + historyWarning);
         }
         catch (OperationCanceledException) { Finish("已取消或超时", "任务已停止；没有继续提交输入。已产生的结果仍保留。 "); }
+        catch (AiRequestException e) { Finish("AI 优化失败", e.Message + " 原文已保留，可复制、重试或关闭 AI 使用本地结果。"); }
         catch (Exception e) { Finish("处理失败", Friendly(e)); }
+    }
+
+    public void OpenAiPanel() => AiPanelRequested?.Invoke(false);
+
+    public void SaveAiConfiguration(string endpoint, string model, int timeoutSeconds, string? newKey, bool clearKey)
+    {
+        if (Busy) throw new InvalidOperationException("请先结束或取消当前任务，再修改 AI 连接配置。");
+        var next = Settings.Clone();
+        next.AiEndpoint = endpoint.Trim(); next.AiModel = model.Trim(); next.AiTimeoutSeconds = timeoutSeconds;
+        SettingsStore.Validate(next);
+        if (next.AiEnabled && string.IsNullOrEmpty(newKey) && (clearKey || !AiCredentials.HasKey))
+            throw new InvalidOperationException("AI 仍处于开启状态，请填写并保存 API Key，或先关闭 AI。");
+        if (!string.IsNullOrEmpty(newKey)) AiCredentials.Save(newKey);
+        else if (clearKey) AiCredentials.Clear();
+        Store.Save(next); Settings = next;
+        Notify("AI 配置已保存", AiCredentials.HasKey ? "接口和模型已保存；API Key 由当前 Windows 用户的 DPAPI 加密保护。" : "接口和模型已保存；尚未保存 API Key。");
+    }
+
+    public async Task SetAiEnabledAsync(bool enabled)
+    {
+        if (enabled)
+        {
+            string? key = AiCredentials.Load();
+            if (string.IsNullOrWhiteSpace(Settings.AiEndpoint) || string.IsNullOrWhiteSpace(Settings.AiModel) || string.IsNullOrWhiteSpace(key))
+                throw new InvalidOperationException("请先填写完整 Chat Completions 接口地址、模型名称和 API Key，再开启 AI。");
+        }
+        bool cancel = !enabled && Phase is SessionPhase.Optimizing or SessionPhase.AwaitingConfirmation;
+        if (cancel) await CancelAsync();
+        var next = Settings.Clone(); next.AiEnabled = enabled;
+        SettingsStore.Validate(next); Store.Save(next); Settings = next;
+        Notify(enabled ? "AI 优化已开启" : "AI 优化已关闭", enabled
+            ? "之后的识别文字会在本地处理后发送到所配置服务，并先显示预览；不会发送音频或自动提交表单。"
+            : "普通本地语音输入继续可用，不再发送 AI 优化请求。");
+    }
+
+    public void SaveAiPreferences(string instructions, string templateId, string strength, bool allowExpansion)
+    {
+        var next = Settings.Clone(); next.AiInstructions = instructions; next.AiTemplateId = templateId;
+        next.AiStrength = strength; next.AiAllowExpansion = allowExpansion;
+        SettingsStore.Validate(next); Store.Save(next); Settings = next;
+    }
+
+    private void SaveAiPreferences(string instructions, string templateId) =>
+        SaveAiPreferences(instructions, templateId, Settings.AiStrength, Settings.AiAllowExpansion);
+
+    public async Task OptimizeAsync(string original, string instructions, string templateId)
+    {
+        if (Busy) throw new InvalidOperationException("当前已有任务，请先完成或取消后再优化。");
+        if (!Settings.AiEnabled) throw new InvalidOperationException("AI 优化当前关闭，原文不会发送。请先完成配置并开启 AI。");
+        if (string.IsNullOrWhiteSpace(original) || original.Length > 100000) throw new ArgumentException("请输入 1–100000 字符的待优化原文。");
+        SaveAiPreferences(instructions, templateId);
+        OriginalResult = original; Result = original;
+        Begin(SessionPhase.Optimizing, "正在 AI 优化", "仅发送面板中的原文、优化要求和所选模板；不发送音频。Esc 可取消。");
+        AiPanelRequested?.Invoke(true);
+        try { await OptimizeCoreAsync(original, cancellation!.Token); }
+        catch (OperationCanceledException) { Finish("已取消 AI 优化", "请求已取消，迟到结果会被忽略；原文仍保留。 "); }
+        catch (AiRequestException e) { Finish("AI 优化失败", e.Message + " 原文已保留，可复制、修改配置或重试。"); }
+        catch (Exception e) { Finish("AI 优化失败", Friendly(e) + " 原文已保留。"); }
+    }
+
+    private async Task OptimizeCoreAsync(string source, CancellationToken token)
+    {
+        string key = AiCredentials.Load() ?? throw new AiRequestException(AiErrorKind.InvalidKey, "尚未配置 API Key。");
+        var template = AiTemplates.Find(Settings.AiTemplateId);
+        string optimized = await aiClient.OptimizeAsync(Settings, key, template, source, token);
+        token.ThrowIfCancellationRequested();
+        if (!Settings.AiEnabled || Phase != SessionPhase.Optimizing) throw new OperationCanceledException();
+        Result = optimized;
+        cancellation?.CancelAfter(Timeout.InfiniteTimeSpan);
+        string historyWarning = TargetInputService.IsSafeText(optimized) ? RecordHistory(OriginalResult, optimized, false) : " 含换行等控制字符的结果未加入历史，可在面板复制。";
+        SetPhase(SessionPhase.AwaitingConfirmation, "AI 结果待确认", "结果仅供预览，可编辑、复制、重新优化或使用原文。确认后需重新选择输入位置；不会执行 AI 返回的命令。" + historyWarning);
+        AiPanelRequested?.Invoke(true);
+    }
+
+    public void UpdateAiResult(string edited)
+    {
+        if (Phase != SessionPhase.AwaitingConfirmation) return;
+        if (string.IsNullOrWhiteSpace(edited) || edited.Length > 100000) throw new ArgumentException("优化结果需为 1–100000 字符；也可以取消并使用原文。");
+        Result = edited; Changed?.Invoke();
+    }
+
+    public async Task ConfirmAiWriteAsync()
+    {
+        if (Phase != SessionPhase.AwaitingConfirmation || Result.Length == 0) return;
+        Finish("已确认 AI 结果", "请重新选择输入位置，写入前会再次验证窗口、焦点和光标。");
+        await RetryWriteAsync();
+    }
+
+    public async Task UseOriginalAiAsync()
+    {
+        if (Phase != SessionPhase.AwaitingConfirmation || OriginalResult.Length == 0) return;
+        Result = OriginalResult;
+        Finish("已选择原文", "请重新选择输入位置，写入前会再次验证窗口、焦点和光标。");
+        await RetryWriteAsync();
+    }
+
+    public async Task TestAiConnectionAsync()
+    {
+        if (Busy) throw new InvalidOperationException("请先结束当前任务，再测试 AI 连接。");
+        Begin(SessionPhase.Preparing, "正在测试 AI 连接", "将向你配置的服务发送一条极短测试请求，可能产生少量费用。不会自动重试。");
+        try
+        {
+            string key = AiCredentials.Load() ?? throw new AiRequestException(AiErrorKind.InvalidKey, "尚未配置 API Key。");
+            await aiClient.TestConnectionAsync(Settings, key, cancellation!.Token);
+            Finish("AI 连接成功", "服务已按 OpenAI 兼容 Chat Completions 协议返回内容；这不代表后续优化结果已经确认或写入。");
+        }
+        catch (OperationCanceledException) { Finish("AI 连接测试已取消", "未继续等待服务响应，不会自动重试。"); }
+        catch (AiRequestException e) { Finish("AI 连接失败", e.Message); }
+        catch (Exception e) { Finish("AI 连接失败", Friendly(e)); }
     }
 
     public async Task CancelAsync()
     {
         if (!Busy) return;
         cancellation?.Cancel();
+        if (Phase == SessionPhase.AwaitingConfirmation)
+        {
+            Finish("已取消 AI 预览", "未写入任何文字；当前原文和结果仍保留，可复制。");
+            return;
+        }
         if (Phase == SessionPhase.Recording) await StopAsync();
         else { Status = "正在取消"; Detail = "等待当前操作释放资源，不会写入迟到的结果。"; Changed?.Invoke(); }
         if (finished != null) await finished.Task;
@@ -258,11 +389,11 @@ public sealed class SessionController : IDisposable
     }
     private static string Friendly(Exception e) => e switch
     {
-        InvalidDataException or InvalidOperationException => e.Message,
+        InvalidDataException or InvalidOperationException or AiRequestException => e.Message,
         UnauthorizedAccessException => "没有访问权限，请检查麦克风隐私设置和模型目录权限。",
         IOException => "无法读写文件，请检查目录权限、磁盘空间或模型是否被占用。",
         DllNotFoundException or TypeInitializationException => "语音运行库无法加载，请检查 x64 版本及 Microsoft Visual C++ 运行库。",
         _ => $"操作失败（{e.GetType().Name}）。结果不会丢失，请检查设备和模型后重试。"
     };
-    public void Dispose() { recorder.Dispose(); input.Dispose(); Hotkeys.Dispose(); cancellation?.Dispose(); }
+    public void Dispose() { recorder.Dispose(); input.Dispose(); Hotkeys.Dispose(); aiClient.Dispose(); cancellation?.Dispose(); }
 }

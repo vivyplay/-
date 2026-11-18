@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Automation;
@@ -32,16 +33,18 @@ public static class Program
                 string root = Path.GetFullPath(args.Length > 0 ? args[0] : ".");
                 int executableIndex = Array.IndexOf(args, "--executable");
                 string? executable = executableIndex >= 0 ? args[executableIndex + 1] : null;
-                string report = args.Contains("--desktop") ? (executable != null ? "desktop-release-results.json" : "desktop-results.json") : "test-results.json";
+                string report = args.Contains("--desktop") ? (executable != null ? "desktop-release-results.json" : "desktop-results.json") : args.Contains("--notepad-write") ? (executable != null ? "notepad-write-release-results.json" : "notepad-write-results.json") : args.Contains("--ai-only") ? "ai-contract-results.json" : "test-results.json";
                 File.WriteAllText(Path.Combine(root, report), JsonSerializer.Serialize(new[] { new { test = "完整测试运行", passed = false, detail = "测试进行中；若进程已退出，表示测试异常中断。" } }));
-                if (args.Contains("--desktop")) await TestDesktop(root, executable);
+                if (args.Contains("--desktop")) await TestDesktop(root, executable, args.Contains("--ai-desktop-only"));
+                else if (args.Contains("--notepad-write")) await TestNotepadWrite(root, executable);
+                else if (args.Contains("--ai-only")) await Stage3Tests.Run(root);
                 else await RunTests(root);
             }
             catch (Exception e) { Record("测试运行器", false, e.ToString()); code = 1; }
             finally
             {
                 string root = Path.GetFullPath(args.Length > 0 ? args[0] : ".");
-                string report = args.Contains("--desktop") ? (args.Contains("--executable") ? "desktop-release-results.json" : "desktop-results.json") : "test-results.json";
+                string report = args.Contains("--desktop") ? (args.Contains("--executable") ? "desktop-release-results.json" : "desktop-results.json") : args.Contains("--notepad-write") ? (args.Contains("--executable") ? "notepad-write-release-results.json" : "notepad-write-results.json") : args.Contains("--ai-only") ? "ai-contract-results.json" : "test-results.json";
                 File.WriteAllText(Path.Combine(root, report), JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }));
                 app.Shutdown(code != 0 || failures > 0 ? 1 : 0);
             }
@@ -98,6 +101,11 @@ public static class Program
             bool conflict = !other.TrySet(3, 0x78);
             bool preserved = hotkey.TrySet(3, 0x78);
             Record("全局热键注册与冲突拒绝", first && conflict && preserved);
+            bool changed = hotkey.TrySet(3, 0x79);
+            bool oldReleased = other.TrySet(3, 0x78);
+            using var replacementProbe = new HotkeyService();
+            bool replacementConflict = !replacementProbe.TrySet(3, 0x79);
+            Record("全局热键修改后旧键释放且新键生效", changed && oldReleased && replacementConflict);
             Record("暂停和恢复热键", hotkey.TogglePause() && hotkey.Paused && hotkey.TogglePause() && !hotkey.Paused);
         }
         Record("真实模型 SHA-256 校验", await RecognitionService.VerifyAsync(Path.Combine(root, "ggml-tiny-q5_1.bin"), ModelInfo.Find("tiny-q5_1"), CancellationToken.None));
@@ -165,7 +173,9 @@ public static class Program
             catch (InvalidOperationException) { Record("无麦克风明确拒绝", true); }
         }
         await TestInput(temporary);
+        await TestNotepadWrite(root);
         await Stage2Tests.Run(root);
+        await Stage3Tests.Run(root);
         Console.WriteLine("测试结束，详见 test-results.json。");
     }
 
@@ -237,10 +247,81 @@ public static class Program
             if (!host.HasExited) { host.CloseMainWindow(); await host.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(5)); }
         }
     }
-    private static async Task TestDesktop(string root, string? executableOverride)
+    private static async Task TestNotepadWrite(string root, string? executable = null)
+    {
+        string path = Path.Combine(root, "notepad-write-" + Guid.NewGuid().ToString("N") + ".txt");
+        File.WriteAllText(path, "");
+        Process.Start(new ProcessStartInfo("notepad.exe", $"\"{path}\"") { UseShellExecute = true });
+        AutomationElement? window = null;
+        for (int i = 0; i < 60 && window == null; i++)
+        {
+            await Task.Delay(100);
+            var windows = AutomationElement.RootElement.FindAll(TreeScope.Children, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Window));
+            foreach (AutomationElement candidate in windows)
+                if (candidate.Current.Name.Contains(Path.GetFileName(path), StringComparison.OrdinalIgnoreCase)) { window = candidate; break; }
+        }
+        if (window == null) { Record("临时记事本窗口启动", false); return; }
+        nint handle = (nint)window.Current.NativeWindowHandle;
+        for (int i = 0; i < 20 && NativeMethods.GetForegroundWindow() != handle; i++)
+        {
+            SetForegroundWindow(handle);
+            await Task.Delay(100);
+        }
+        if (NativeMethods.GetForegroundWindow() != handle)
+        {
+            NativeMethods.SetWindowPos(handle, -1, 0, 0, 0, 0, 0x53);
+            var rect = window.Current.BoundingRectangle;
+            var point = new NativePoint { X = (int)(rect.X + rect.Width / 2), Y = (int)(rect.Y + rect.Height / 2) };
+            nint atPoint = WindowFromPoint(point);
+            if (GetAncestor(atPoint, 2) != handle)
+            {
+                NativeMethods.SetWindowPos(handle, -2, 0, 0, 0, 0, 0x53);
+                Record("临时记事本点击区域验证", false);
+                return;
+            }
+            SetCursorPos(point.X, point.Y);
+            mouse_event(2, 0, 0, 0, 0); mouse_event(4, 0, 0, 0, 0);
+            NativeMethods.SetWindowPos(handle, -2, 0, 0, 0, 0, 0x53);
+            await Task.Delay(300);
+        }
+        if (NativeMethods.GetForegroundWindow() != handle) { Record("临时记事本置于前台", false); return; }
+        string assemblyPath = executable == null ? typeof(TargetInputService).Assembly.Location : Path.ChangeExtension(Path.GetFullPath(executable), ".dll")!;
+        IDisposable input;
+        if (executable == null) input = new TargetInputService();
+        else
+        {
+            var loadContext = new AssemblyLoadContext("Release notepad validation");
+            var assembly = loadContext.LoadFromAssemblyPath(assemblyPath);
+            input = (IDisposable)Activator.CreateInstance(assembly.GetType("Suisheng.TargetInputService", true)!)!;
+        }
+        using (input)
+        {
+            object? target = await InvokeInputAsync(input, "CaptureAsync");
+            nint targetWindow = target == null ? 0 : (nint)target.GetType().GetProperty("Window")!.GetValue(target)!;
+            Record("临时记事本目标捕获", target != null && targetWindow == handle);
+            if (target == null) return;
+            const string text = "1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。";
+            object outcome = (await InvokeInputAsync(input, "WriteAsync", target, text, CancellationToken.None))!;
+            bool submitted = (bool)outcome.GetType().GetProperty("Submitted")!.GetValue(outcome)!;
+            await Task.Delay(500);
+            var element = (AutomationElement)target.GetType().GetProperty("Element")!.GetValue(target)!;
+            string actual = ((TextPattern)element.GetCurrentPattern(TextPattern.Pattern)).DocumentRange.GetText(-1).TrimEnd('\r', '\n');
+            Record("记事本完整 Unicode 实际接收", submitted && actual == text,
+                $"提交={submitted}；预期={text}；实际={actual}；文件={path}；程序集={assemblyPath}");
+        }
+    }
+
+    private static async Task<object?> InvokeInputAsync(object input, string method, params object?[] arguments)
+    {
+        var task = (Task)input.GetType().GetMethod(method)!.Invoke(input, arguments)!;
+        await task;
+        return task.GetType().GetProperty("Result")!.GetValue(task);
+    }
+
+    private static async Task TestDesktop(string root, string? executableOverride, bool aiOnly = false)
     {
         string executable = Path.GetFullPath(executableOverride ?? Path.Combine(root, "../src/Suisheng/bin/Debug/net10.0-windows/win-x64/Suisheng.exe"));
-        string screenshotPrefix = executableOverride == null ? "stage2" : "stage2-release";
+        string screenshotPrefix = executableOverride == null ? "stage3" : "stage3-release";
         if (Process.GetProcessesByName("Suisheng").Length != 0)
             throw new InvalidOperationException("请先手动退出正在运行的随声输入；测试不会操作已有实例。");
         string localRoot = Path.Combine(root, "desktop-data-" + Guid.NewGuid().ToString("N"));
@@ -297,7 +378,8 @@ public static class Program
                 graphics.CopyFromScreen((int)rect.X, (int)rect.Y, 0, 0, image.Size);
                 image.Save(Path.Combine(root, screenshotPrefix + "-settings.png"), System.Drawing.Imaging.ImageFormat.Png);
             }
-            await Stage2DesktopTests.Run(panel, ball, process, root, dataDirectory, screenshotPrefix);
+            if (!aiOnly) await Stage2DesktopTests.Run(panel, ball, process, root, dataDirectory, screenshotPrefix);
+            await Stage3DesktopTests.Run(panel, ball, process, root, dataDirectory, screenshotPrefix);
             var secondStart = new ProcessStartInfo(executable) { UseShellExecute = false };
             secondStart.Environment["SUISHENG_DATA_DIRECTORY"] = dataDirectory;
             using var second = Process.Start(secondStart)!;
@@ -328,6 +410,9 @@ public static class Program
             if (!process.HasExited) process.Kill();
         }
     }
+    [StructLayout(LayoutKind.Sequential)] private struct NativePoint { public int X, Y; }
+    [DllImport("user32.dll")] private static extern nint WindowFromPoint(NativePoint point);
+    [DllImport("user32.dll")] private static extern nint GetAncestor(nint window, uint flags);
     [DllImport("user32.dll")] private static extern uint GetClipboardSequenceNumber();
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern nint GetWindowLongPtr(nint hwnd, int index);
     [DllImport("user32.dll")] private static extern bool IsWindow(nint hwnd);

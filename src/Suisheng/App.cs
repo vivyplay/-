@@ -14,6 +14,7 @@ public sealed class App : Application
     private SessionController? controller;
     private MainWindow? panel;
     private FloatingBall? ball;
+    private AiWindow? aiWindow;
     private Forms.NotifyIcon? tray;
     private Icon? trayIcon;
     private bool exiting;
@@ -40,11 +41,15 @@ public sealed class App : Application
         panel = new MainWindow(controller);
         MainWindow = panel;
         ball = new FloatingBall(controller);
+        aiWindow = new AiWindow(controller);
         panel.ExitRequested += () => _ = ExitAsync();
         ball.ExitRequested += () => _ = ExitAsync();
         ball.OpenRequested += () => panel.Open();
         ball.SettingsRequested += () => panel.Open(true);
         ball.AppearanceRequested += () => panel.Open(appearance: true);
+        panel.AiOpenRequested += () => aiWindow.Open(false);
+        ball.AiOpenRequested += () => aiWindow.Open(false);
+        controller.AiPanelRequested += session => aiWindow.Open(session);
         controller.ShowRequested += () => panel.Open();
         controller.SettingsApplied += theme => ThemeService.Apply(this, theme);
         trayIcon = MakeIcon();
@@ -55,6 +60,11 @@ public sealed class App : Application
         menu.Items.Add("取消当前任务", null, async (_, _) => await controller.CancelAsync());
         menu.Items.Add("暂停 / 恢复快捷键", null, (_, _) => controller.TogglePause());
         menu.Items.Add("模型与设置", null, (_, _) => panel.Open(true));
+        menu.Items.Add("AI 提示词面板", null, (_, _) => aiWindow.Open(false));
+        var aiToggle = new Forms.ToolStripMenuItem("开启 AI 优化…");
+        aiToggle.Click += async (_, _) => await ToggleAi();
+        menu.Items.Add(aiToggle);
+        menu.Opened += (_, _) => aiToggle.Text = controller.Settings.AiEnabled ? "关闭 AI 优化" : "开启 AI 优化…";
         menu.Items.Add(new Forms.ToolStripSeparator());
         menu.Items.Add("退出软件", null, async (_, _) => await ExitAsync());
         tray.ContextMenuStrip = menu;
@@ -81,16 +91,26 @@ public sealed class App : Application
         if (e.Reason is SessionSwitchReason.SessionLock or SessionSwitchReason.SessionLogoff or SessionSwitchReason.RemoteDisconnect or SessionSwitchReason.ConsoleDisconnect)
             Dispatcher.BeginInvoke(async () => { if (controller != null) await controller.CancelAsync(); });
     }
+    internal static bool RequiresTaskCancellation(PowerModes mode) => mode is PowerModes.Suspend or PowerModes.Resume;
     private void OnPowerModeChanged(object sender, PowerModeChangedEventArgs e)
     {
-        if (e.Mode == PowerModes.Suspend) Dispatcher.BeginInvoke(async () => { if (controller != null) await controller.CancelAsync(); });
+        if (RequiresTaskCancellation(e.Mode)) Dispatcher.BeginInvoke(async () => { if (controller != null) await controller.CancelAsync(); });
     }
+    private async Task ToggleAi()
+    {
+        if (controller == null) return;
+        try { await controller.SetAiEnabledAsync(!controller.Settings.AiEnabled); }
+        catch (Exception e) when (e is InvalidOperationException or ArgumentException or System.IO.InvalidDataException or System.IO.IOException or UnauthorizedAccessException)
+        { controller.Notify("AI 开关未更改", e.Message); aiWindow?.Open(false); }
+    }
+
     private async Task ExitAsync()
     {
         if (exiting) return;
         exiting = true;
         if (controller != null) await controller.CancelAsync();
         if (panel != null) { panel.AllowClose = true; panel.Close(); }
+        if (aiWindow != null) { aiWindow.AllowClose = true; aiWindow.Close(); }
         ball?.Close();
         Shutdown();
     }

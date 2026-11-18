@@ -1,0 +1,206 @@
+{
+  "stage": "AI 优化阶段",
+  "version": "0.3.1",
+  "validationDate": "2026-11-18",
+  "conclusion": "0.3.1 的真实 OpenAI 兼容 Chat Completions 客户端、DPAPI 密钥保护、模板、预览确认、取消隔离、全局 AI 开关及逐字符 Unicode 写入修复已实现。最终核心及 AI 契约/状态、Debug 桌面、Release 桌面和 Release DLL 真实记事本接收报告全部通过。用户已在 0.3.0 通过真实 DeepSeek 连接、三点优化、待确认预览及不自动写入验收，但当时确认写入记事本出现乱码；0.3.1 修复后由用户完成实机复测，并于 2026-11-18 明确表示验收完成。真实聊天软件、游戏及其他环境仍按未验证清单处理。",
+  "environment": {
+    "os": "Windows 11，10.0.26200，x64",
+    "dotnetSdk": "10.0.202",
+    "targetFramework": "net10.0-windows",
+    "desktopDisplayScaleObserved": "125%",
+    "testDataIsolation": "桌面进程通过 SUISHENG_DATA_DIRECTORY 使用 tests/desktop-data-* 隔离目录，不读取或删除真实用户设置、历史或密钥。",
+    "aiContractServer": "自动 AI 契约测试的 HTTP 服务仅绑定 127.0.0.1，使用真实 HttpListener 和 HttpClient 请求；与真实 DeepSeek 用户实机结果分别记录。",
+    "notepadTarget": "独立 tests/notepad-write-*.txt 空白临时文件；通过前台窗口、坐标归属、目标捕获及写入前二次验证后才发送文字，并使用记事本 TextPattern 检查实际接收内容。"
+  },
+  "commands": [
+    {
+      "purpose": "构建并运行完整核心、第二阶段、第三阶段契约/状态及 Debug 真实记事本接收测试",
+      "command": "dotnet build tests/Suisheng.Tests.csproj -c Debug; tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe tests/.",
+      "exitCode": 0
+    },
+    {
+      "purpose": "完整第二阶段和 AI Debug 实际桌面回归",
+      "command": "tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe tests/. --desktop",
+      "exitCode": 0
+    },
+    {
+      "purpose": "生成独立 0.3.1 self-contained Release，并包含 Base 模型和许可",
+      "command": "dotnet publish src/Suisheng/Suisheng.csproj -c Release -r win-x64 --self-contained true -o dist/Suisheng-stage3-0.3.1-win-x64 -p:DebugType=None -p:DebugSymbols=false -p:RestoreLockedMode=true",
+      "exitCode": 0
+    },
+    {
+      "purpose": "对本次 0.3.1 Release 运行同一套完整桌面回归及发布模型校验",
+      "command": "tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe tests/. --desktop --executable dist/Suisheng-stage3-0.3.1-win-x64/Suisheng.exe",
+      "exitCode": 0,
+      "attempts": "第一次 40 项通过、1 项失败；第二次同一发布物 41 项全部通过。详见 automationNotes。"
+    },
+    {
+      "purpose": "直接加载 0.3.1 Release Suisheng.dll，验证真实记事本目标捕获和完整中文实际接收",
+      "command": "tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe tests/. --notepad-write --executable dist/Suisheng-stage3-0.3.1-win-x64/Suisheng.exe",
+      "exitCode": 0
+    }
+  ],
+  "results": {
+    "core": {
+      "report": "tests/test-results.json",
+      "total": 102,
+      "passed": 102,
+      "failed": 0,
+      "existingStage1AndStage2Assertions": 73,
+      "stage3Assertions": 27,
+      "notepadRegressionAssertions": 2,
+      "includes": [
+        "AI 默认关闭、非敏感设置保存、公网 HTTPS 和 URL 限制",
+        "DPAPI CurrentUser 密钥往返、删除及密文落盘",
+        "五种内置模板、自定义模板 CRUD、恢复内置和损坏文件保护",
+        "真实回环 Chat Completions 请求 URL、query、模型、消息和 Authorization",
+        "响应正文解析、401、404、429、额度、空响应和异常格式",
+        "用户取消、超时、限流及额度错误后请求次数为 1 且不自动重试",
+        "AI 完成后默认待确认、编辑不改变原文、取消待确认保留结果",
+        "优化中关闭 AI 和迟到结果隔离、AI 关闭不发送请求、失败保留原文",
+        "原有真实本地 CPU Whisper、取消和安全 Unicode 写入链路回归",
+        "真实记事本目标捕获、中文逐字符提交及 TextPattern 实际接收全文一致"
+      ]
+    },
+    "debugDesktop": {
+      "report": "tests/desktop-results.json",
+      "total": 39,
+      "passed": 39,
+      "failed": 0,
+      "includes": "完整第二阶段桌面回归，加 AI 默认状态、真实 WPF 面板、配置和 DPAPI 保存、真实回环连接测试、跨界面开关同步、模板 CRUD、真实请求后预览、编辑确认及目标重验、Alt+F4 迟到结果隔离、关闭后禁止请求、深色主题、单实例和退出。"
+    },
+    "releaseDesktop": {
+      "report": "tests/desktop-release-results.json",
+      "total": 41,
+      "passed": 41,
+      "failed": 0,
+      "includes": "对本次 dist/Suisheng-stage3-0.3.1-win-x64 的 0.3.1 发布物执行同一套完整桌面流程，并额外验证默认 Base 模型和模型 SHA-256；未使用旧发布包结果代替。"
+    },
+    "releaseNotepad": {
+      "report": "tests/notepad-write-release-results.json",
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "loadedAssembly": "dist/Suisheng-stage3-0.3.1-win-x64/Suisheng.dll",
+      "actualReceivedText": "1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。"
+    },
+    "combinedAssertions": {
+      "total": 184,
+      "passed": 184,
+      "failed": 0,
+      "note": "合计为核心 102、Debug 桌面 39、Release 桌面 41、Release 记事本 2；不重复加入单独 Debug 记事本报告中的 2 项。"
+    },
+    "build": {
+      "debugErrors": 0,
+      "debugWarnings": 0,
+      "releasePublishExitCode": 0
+    }
+  },
+  "automationNotes": {
+    "firstReleaseDesktopAttempt": {
+      "passed": 40,
+      "failed": 1,
+      "failedTest": "确认编辑结果后重新验证目标且不向自身窗口误写",
+      "exitCode": 1
+    },
+    "finalReleaseDesktopAttempt": {
+      "passed": 41,
+      "failed": 0,
+      "exitCode": 0,
+      "confirmedDetail": "确认=True；完成=True；状态=待手动输入；结果=人工编辑后的桌面结果"
+    },
+    "interpretation": "首次单项失败未在第二次运行中复现，最终报告为 41/41；不把一次重跑通过扩大解释为所有真实目标应用或所有竞态均已验证。"
+  },
+  "release": {
+    "directory": "dist/Suisheng-stage3-0.3.1-win-x64",
+    "executable": "dist/Suisheng-stage3-0.3.1-win-x64/Suisheng.exe",
+    "kind": "win-x64 self-contained 目录发布，不是安装包；必须保留完整目录，不能只复制 EXE",
+    "fileVersion": "0.3.1.0",
+    "baseModel": "models/ggml-base.bin",
+    "baseModelBytes": 147951465,
+    "baseModelSha256": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe",
+    "applicationDllSha256": "0e9e0d78ca087296793493cefaeff5e4b7f03f35cc7c5ac43618da7ec4d58668",
+    "licenseFiles": 4,
+    "oldStageDirectoriesModified": false
+  },
+  "realExternalAi": {
+    "testedVersion": "0.3.0",
+    "provider": "DeepSeek",
+    "endpoint": "https://api.deepseek.com/chat/completions",
+    "model": "deepseek-flash",
+    "source": "用户在本机界面保存配置并手动操作后的明确反馈；API Key 仅由用户在本机输入，未通过聊天、日志或报告传递。",
+    "userAuthorization": "用户明确允许发送测试文字并可能产生费用。",
+    "connection": "passed",
+    "optimization": "passed",
+    "threePointFormatting": "passed",
+    "awaitingConfirmationPreview": "passed",
+    "otherWindowsNotAutomaticallyWritten": "passed",
+    "optimizedText": "1. 会议时间：明天上午十点召开产品会议。\n2. 会议内容：讨论项目进度和目前存在的问题。\n3. 会议目标：确定后续工作安排。",
+    "notepadWrite": "failed",
+    "actualNotepadTextReportedByUser": "1.；；；；；；；；；；；；；；2.；3.。。。。。。。。。。。。。",
+    "notepadEnvironment": "Windows 文本记事本；写入前 AI 结果框文字完整；默认输入法。",
+    "version031UserRetest": "passed",
+    "version031UserRetestEvidence": "用户完成 0.3.1 实机复测后，于 2026-11-18 明确表示“验收完成”；未记录或保存 API Key。"
+  },
+  "unicodeWriteFix": {
+    "version": "0.3.1",
+    "changedFile": "src/Suisheng/TargetInputService.cs",
+    "observedProblem": "整段批量 SendInput 返回的事件数量完整，但真实记事本在默认输入法环境下仍发生错误字符转换，不能仅凭 SendInput 返回值判定写入成功。",
+    "fix": "保留原目标捕获、写入前二次验证、取消和安全文本限制；改为逐字符发送 Unicode keydown/keyup，并在字符之间短暂让出消息循环。",
+    "before": "1.天天天上午十点召开产品会议；2.；；；；；；；；；；；；；；；；3.。。。。。。。。。。。",
+    "after": "1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。",
+    "verification": "修复前后均使用独立空白记事本、真实 TargetInputService 和 TextPattern 实际接收校验；Debug 与 0.3.1 Release DLL 均通过。用户随后完成 0.3.1 实机复测，并于 2026-11-18 明确表示验收完成。"
+  },
+  "implemented": [
+    "真实 OpenAI 兼容 Chat Completions HTTP 客户端，使用用户配置的完整 URL 和模型，不自动拼接路径，不预设服务商。",
+    "公网接口强制 HTTPS，HTTP 仅允许 localhost、127.0.0.1 和 ::1；拒绝 URL userinfo 和 fragment。",
+    "API Key 使用 Windows DPAPI CurrentUser 加密到 ai-credential.bin，普通 settings.json、模板和测试报告不保存真实密钥。",
+    "连接测试和优化请求前明确提示发送文字及可能产生费用；错误不自动重试，避免重复计费。",
+    "通用优化、简洁表达、详细任务、编程任务和仅纠错润色五种内置模板，以及自定义新建、修改、删除和恢复内置。",
+    "语音识别结果和手动输入两种来源，原文、优化要求、模板和结果分区保留；支持优化强度及是否允许必要扩写。",
+    "AI 默认关闭，主面板、设置、AI 面板、悬浮球和托盘状态同步；关闭或配置不完整时本地语音输入仍可使用。",
+    "结果默认预览确认，可编辑、复制、取消、重新优化和使用原文；确认后进入既有目标重选及 TargetInputService 安全写入流程。",
+    "优化中关闭 AI、取消或关闭窗口后迟到结果不得进入预览或写入；AI 返回仅作为文本，不执行命令或自动提交。",
+    "逐字符 Unicode 写入及真实记事本接收回归，避免把事件提交数量误当作目标应用实际文本正确。"
+  ],
+  "visualEvidence": {
+    "manuallyInspected": true,
+    "files": [
+      "tests/stage3-ai-api.png",
+      "tests/stage3-ai-templates.png",
+      "tests/stage3-ai-preview.png",
+      "tests/stage3-ai-dark.png",
+      "tests/stage3-release-main.png",
+      "tests/stage3-release-ai-templates.png",
+      "tests/stage3-release-ai-preview.png",
+      "tests/stage3-release-ai-dark.png"
+    ],
+    "confirmed": "0.3.1 Debug 和 Release AI 原文/结果分区、模板、输入框和按钮可读；浅色和深色正文可读，禁用按钮文字可见，API Key 未显示；主界面版本显示 0.3.1。"
+  },
+  "stage2UserRetest": {
+    "testedVersion": "0.2.1",
+    "passed": ["A3 真实物理键盘长按", "全局快捷键修改"],
+    "knownFailure": {
+      "id": "B2",
+      "status": "已复现、尚未解决、按用户要求暂缓修复",
+      "detail": "用户在 0.2.1 真实休眠唤醒后仍发现录音；不得宣称通过。"
+    }
+  },
+  "notVerified": [
+    "真实聊天软件和游戏普通输入区域未验证；窗口化、无边框、全屏、权限差异、输入法、焦点及安全写入失败后的复制降级均需单独验收。",
+    "真实服务商的广泛模型行为、长期优化质量、复杂网络、持续计费、限流策略和隐私条款未完整验收。",
+    "B2 休眠唤醒后仍录音尚未解决，按用户明确要求暂缓；事件路由自动化不能替代实机结果。",
+    "用户报告的 C2、C4 仍未测试；真人麦克风细分、设备热插拔、权限拒绝等场景未完整实测。",
+    "自启动后注销或重启、多显示器、混合 DPI、Windows 10、高对比度主题和更多目标应用兼容性未验证。",
+    "连续快速开始、取消、设备变化、AI 取消和目标切换的完整组合竞态未做压力测试。"
+  ],
+  "knownLimitations": [
+    "仅实现 OpenAI 兼容 Chat Completions 的一种明确协议，不宣称兼容其他 API 格式。",
+    "AI 请求会发送用户确认的原文、优化要求和模板，不会发送录音；真实数据保留和费用取决于所配置服务。",
+    "API Key 的 DPAPI 保护绑定当前 Windows 用户，不等于跨设备可迁移凭据或系统级密钥托管。",
+    "包含换行、Tab 等控制字符的结果不能自动写入，只能复制后手动处理；不会模拟 Enter 或自动提交。",
+    "历史默认关闭，主动开启后仍以未加密 JSON 保存，最多 100 条。",
+    "发布物是免安装目录，不包含正式安装、卸载、签名或在线更新。"
+  ],
+  "nextAction": "0.3.1 用户实机验收已完成。下一阶段单独验收真实聊天软件和游戏普通文字输入，并继续保留 B2 未解决且暂缓的状态。"
+}

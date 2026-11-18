@@ -39,6 +39,15 @@ public sealed class UserSettings
     public int MaxRecordingSeconds { get; set; } = 120;
     public double? BallLeft { get; set; }
     public double? BallTop { get; set; }
+    public bool AiEnabled { get; set; }
+    public string AiEndpoint { get; set; } = "";
+    public string AiModel { get; set; } = "";
+    public int AiTimeoutSeconds { get; set; } = 60;
+    public string AiTemplateId { get; set; } = "general";
+    public string AiInstructions { get; set; } = "纠正识别错误，保留原意。";
+    public string AiStrength { get; set; } = "balanced";
+    public bool AiAllowExpansion { get; set; }
+    public UserSettings Clone() => (UserSettings)MemberwiseClone();
 }
 
 public sealed class SettingsStore
@@ -74,6 +83,7 @@ public sealed class SettingsStore
 
     public static void Validate(UserSettings settings)
     {
+        settings.AiEndpoint ??= ""; settings.AiModel ??= ""; settings.AiInstructions ??= ""; settings.AiTemplateId ??= "general"; settings.AiStrength ??= "balanced";
         if (settings.MaxRecordingSeconds is < 5 or > 600) throw new ArgumentException("最长录音时间须为 5–600 秒。");
         if (settings.Language is not ("zh" or "en" or "auto")) throw new ArgumentException("不支持的识别语言。");
         if (settings.DownloadSource is not ("official" or "mirror")) throw new ArgumentException("不支持的下载源。");
@@ -89,6 +99,20 @@ public sealed class SettingsStore
         if (settings.BallSize is < 48 or > 160 || !double.IsFinite(settings.BallSize)) throw new ArgumentException("悬浮球大小须为 48–160。");
         if (settings.BallOpacity is < 0.4 or > 1 || !double.IsFinite(settings.BallOpacity)) throw new ArgumentException("悬浮球透明度须为 40%–100%。");
         if (settings.HistoryRetentionDays is < 1 or > 3650) throw new ArgumentException("历史保留期限须为 1–3650 天。");
+        if (settings.AiTimeoutSeconds is < 5 or > 300) throw new ArgumentException("AI 请求超时须为 5–300 秒。");
+        if (settings.AiStrength is not ("light" or "balanced" or "thorough")) throw new ArgumentException("不支持的 AI 优化强度。");
+        if (settings.AiEndpoint.Length > 2048 || settings.AiModel.Length > 200 || settings.AiInstructions.Length > 4000 || settings.AiTemplateId.Length > 100)
+            throw new ArgumentException("AI 配置文字超出允许长度。");
+        if (settings.AiEndpoint.Length > 0)
+        {
+            if (!Uri.TryCreate(settings.AiEndpoint, UriKind.Absolute, out var endpoint) || !string.IsNullOrEmpty(endpoint.UserInfo) || !string.IsNullOrEmpty(endpoint.Fragment))
+                throw new ArgumentException("AI 接口地址必须是完整的绝对 URL，且不能包含用户信息或片段。");
+            bool loopback = endpoint.Host is "localhost" or "127.0.0.1" or "::1";
+            if (endpoint.Scheme != Uri.UriSchemeHttps && !(loopback && endpoint.Scheme == Uri.UriSchemeHttp))
+                throw new ArgumentException("公网 AI 接口必须使用 HTTPS；HTTP 仅允许本机回环地址。");
+        }
+        if (settings.AiEnabled && (string.IsNullOrWhiteSpace(settings.AiEndpoint) || string.IsNullOrWhiteSpace(settings.AiModel)))
+            throw new ArgumentException("开启 AI 前必须填写接口地址和模型名称。");
         TextProcessingService.ParseReplacements(settings.ReplacementRules);
         if (!string.IsNullOrEmpty(settings.OrbImagePath) && !Path.IsPathFullyQualified(settings.OrbImagePath)) throw new ArgumentException("悬浮球图片必须使用绝对路径。");
         if (!string.IsNullOrEmpty(settings.AvatarSourcePath) && !Path.IsPathFullyQualified(settings.AvatarSourcePath)) throw new ArgumentException("原始形象图片必须使用绝对路径。");

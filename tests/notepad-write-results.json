@@ -1,0 +1,12 @@
+[
+  {
+    "test": "临时记事本目标捕获",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "记事本完整 Unicode 实际接收",
+    "passed": true,
+    "detail": "提交=True；预期=1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。；实际=1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。；文件=C:\\Users\\23309\\Documents\\Qoder\\2026-11-17\\59db6f65\\tests\\notepad-write-247bea5d4093438591854557ef100ca3.txt"
+  }
+]

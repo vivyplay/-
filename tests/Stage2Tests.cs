@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Microsoft.Win32;
 using Suisheng;
 using Drawing = System.Drawing;
 
@@ -39,29 +40,30 @@ internal static class Stage2Tests
         using (var hotkey = new HotkeyService(ReadKey))
         {
             int triggered = 0, released = 0;
-            hotkey.Triggered += () => triggered++;
+            hotkey.Triggered += () => { triggered++; hotkey.SetTaskActive(true); };
             hotkey.Released += () => released++;
             bool registered = hotkey.TrySet(3, 0x78);
             hotkey.SetRecordingMode(true);
             hotkey.SetTaskActive(true);
             await Task.Delay(140);
-            Program.Record("按住说话未真正按下不误停", registered && triggered == 0 && released == 0 && reads > 0);
+            Program.Record("按住说话未触发时不轮询或误停", registered && triggered == 0 && released == 0 && reads == 0);
 
             states[0x11] = states[0x12] = states[0x78] = unchecked((short)0x8000);
             var source = (HwndSource)typeof(HotkeyService).GetField("source", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(hotkey)!;
             NativeMethods.PostMessage(source.Handle, NativeMethods.WM_HOTKEY, 102, 0);
             bool triggerArrived = await WaitUntil(() => triggered == 1);
-            await Task.Delay(120);
+            for (int i = 0; i < 6; i++) NativeMethods.PostMessage(source.Handle, NativeMethods.WM_HOTKEY, 102, 0);
+            hotkey.SetTaskActive(false);
+            await Task.Delay(140);
+            bool repeatIgnored = triggered == 1 && released == 0 && reads > 0;
             states[0x11] = states[0x12] = states[0x78] = 0;
             bool releaseArrived = await WaitUntil(() => released == 1);
             await Task.Delay(140);
-            Program.Record("按住说话松键只结束一次", triggerArrived && releaseArrived && triggered == 1 && released == 1);
+            Program.Record("按住说话重复消息及任务结束不重复触发", triggerArrived && repeatIgnored && releaseArrived && triggered == 1 && released == 1);
 
-            hotkey.SetTaskActive(false);
-            await Task.Delay(80);
             int stoppedReads = reads;
             await Task.Delay(140);
-            Program.Record("按住说话结束后停止轮询", reads == stoppedReads && released == 1);
+            Program.Record("按住说话松键后停止轮询", reads == stoppedReads && released == 1);
         }
 
         using (var hotkey = new HotkeyService())
@@ -87,6 +89,7 @@ internal static class Stage2Tests
                 if (sent) SendKeys((0x79, true), (0x12, true), (0x11, true));
             }
         }
+        Program.Record("休眠及唤醒均要求取消活动任务", App.RequiresTaskCancellation(PowerModes.Suspend) && App.RequiresTaskCancellation(PowerModes.Resume) && !App.RequiresTaskCancellation(PowerModes.StatusChange));
     }
 
     private static void TestSilence()

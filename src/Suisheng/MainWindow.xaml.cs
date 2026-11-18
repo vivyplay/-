@@ -19,10 +19,12 @@ public partial class MainWindow : Window
     private BitmapSource? avatarImage;
     private string? pendingAvatarSource;
     private bool previewDragging;
+    private bool updatingAi;
     private Point previewOrigin;
     private double avatarOffsetX, avatarOffsetY;
     public bool AllowClose { get; set; }
     public event Action? ExitRequested;
+    public event Action? AiOpenRequested;
 
     public MainWindow(SessionController controller)
     {
@@ -78,6 +80,10 @@ public partial class MainWindow : Window
         LevelBar.Value = controller.Level;
         HotkeyText.Text = HotkeyService.Format(controller.Settings.HotkeyModifiers, controller.Settings.HotkeyKey) + (controller.Hotkeys.Paused ? "  ·  已暂停" : controller.Settings.RecordingMode == "hold" ? "  ·  按住说话，松开结束" : "  ·  按一次开始，再按一次结束");
         DeviceText.Text = "当前选择：" + (MicrophoneCombo.SelectedItem is MicrophoneInfo microphone ? microphone.Name : "系统默认麦克风") + " · Whisper 本地 CPU";
+        updatingAi = true;
+        AiEnabledBox.IsChecked = controller.Settings.AiEnabled; AiSettingsEnabledBox.IsChecked = controller.Settings.AiEnabled;
+        updatingAi = false;
+        AiStateText.Text = controller.Settings.AiEnabled ? "已开启：识别文字将发送到所配置服务，AI 结果先预览确认；不发送音频。" : "关闭时仅在本地处理，不发送优化请求。";
         if (ResultBox.Text != controller.Result) ResultBox.Text = controller.Result;
         if (OriginalResultBox.Text != controller.OriginalResult) OriginalResultBox.Text = controller.OriginalResult;
         RecordButton.Content = controller.Phase == SessionPhase.Recording ? "停止录音" : "开始录音";
@@ -113,6 +119,16 @@ public partial class MainWindow : Window
     private async void Cancel_Click(object sender, RoutedEventArgs e) => await controller.CancelAsync();
     private async void TestMicrophone_Click(object sender, RoutedEventArgs e) => await controller.TestMicrophoneAsync();
     private void OpenSettings_Click(object sender, RoutedEventArgs e) => Tabs.SelectedIndex = 1;
+    private void OpenAi_Click(object sender, RoutedEventArgs e) => AiOpenRequested?.Invoke();
+    private async void AiEnabled_Click(object sender, RoutedEventArgs e)
+    {
+        if (updatingAi) return;
+        bool requested = (sender as CheckBox)?.IsChecked == true;
+        try { await controller.SetAiEnabledAsync(requested); }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or InvalidDataException or IOException or UnauthorizedAccessException)
+        { MessageBox.Show(this, ex.Message, "AI 开关未更改"); AiOpenRequested?.Invoke(); }
+        finally { Refresh(); }
+    }
     private void Clear_Click(object sender, RoutedEventArgs e) => controller.ClearResult();
     private void Copy_Click(object sender, RoutedEventArgs e)
     {
@@ -154,7 +170,10 @@ public partial class MainWindow : Window
                 BallSize = BallSizeSlider.Value, BallOpacity = BallOpacitySlider.Value,
                 HistoryEnabled = HistoryEnabledBox.IsChecked == true, HistoryRetentionDays = historyDays,
                 CloseToTray = CloseToTrayBox.IsChecked == true, StartMinimized = StartMinimizedBox.IsChecked == true,
-                BallLeft = old.BallLeft, BallTop = old.BallTop
+                BallLeft = old.BallLeft, BallTop = old.BallTop,
+                AiEnabled = old.AiEnabled, AiEndpoint = old.AiEndpoint, AiModel = old.AiModel,
+                AiTimeoutSeconds = old.AiTimeoutSeconds, AiTemplateId = old.AiTemplateId,
+                AiInstructions = old.AiInstructions, AiStrength = old.AiStrength, AiAllowExpansion = old.AiAllowExpansion
             };
             if (avatarImage == null) { settings.OrbImagePath = ""; settings.AvatarSourcePath = ""; }
             else if (pendingAvatarSource != null)
@@ -163,6 +182,7 @@ public partial class MainWindow : Window
                 settings.AvatarSourcePath = assets.SourcePath; settings.OrbImagePath = assets.OrbPath;
             }
             controller.SaveSettings(settings);
+            HotkeyHint.Text = "快捷键已保存并立即生效。";
             pendingAvatarSource = null;
             UpdateAvatarPreview();
             RefreshHistory();
@@ -282,15 +302,29 @@ public partial class MainWindow : Window
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { MessageBox.Show(this, "无法清空历史，请检查本地目录权限。", "操作失败"); }
     }
     private void DefaultHotkey_Click(object sender, RoutedEventArgs e)
-    { modifiers = 3; key = 0x20; HotkeyBox.Text = HotkeyService.Format(modifiers, key); }
+    {
+        modifiers = 3; key = 0x20; HotkeyBox.Text = HotkeyService.Format(modifiers, key);
+        HotkeyHint.Text = "已填入默认快捷键，点击“保存所有设置”后生效。";
+    }
     private void Hotkey_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         e.Handled = true;
         Key pressed = e.Key == Key.System ? e.SystemKey : e.Key;
-        if (pressed is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin) return;
+        if (pressed is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift or Key.LWin or Key.RWin)
+        { HotkeyHint.Text = "请继续按一个普通按键，组成完整快捷键。"; return; }
+        if (pressed == Key.Escape)
+        {
+            modifiers = controller.Settings.HotkeyModifiers; key = controller.Settings.HotkeyKey;
+            HotkeyBox.Text = HotkeyService.Format(modifiers, key);
+            HotkeyHint.Text = "已取消修改，保留当前快捷键。"; return;
+        }
+        if (pressed is Key.Return or Key.Tab)
+        { HotkeyHint.Text = "Enter 和 Tab 不用于录音快捷键，请换用字母、数字、空格或功能键。"; return; }
         ModifierKeys held = Keyboard.Modifiers;
-        if (held == ModifierKeys.None || pressed is Key.Escape or Key.Return or Key.Tab) return;
+        if (held == ModifierKeys.None)
+        { HotkeyHint.Text = "单独按键容易误触，请同时按住 Ctrl、Alt、Shift 或 Win 中的一项。"; return; }
         modifiers = (uint)held; key = (uint)KeyInterop.VirtualKeyFromKey(pressed);
         HotkeyBox.Text = HotkeyService.Format(modifiers, key);
+        HotkeyHint.Text = "新组合已录制，点击“保存所有设置”后立即生效；若被占用，原快捷键保持不变。";
     }
 }

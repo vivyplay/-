@@ -19,8 +19,9 @@ public sealed class FloatingBall : Window
     private Point origin;
     private Point windowOrigin;
     private bool pressed, dragged;
-    private readonly MenuItem recordItem, cancelItem, pauseItem;
+    private readonly MenuItem recordItem, cancelItem, pauseItem, aiItem;
     public event Action? OpenRequested;
+    public event Action? AiOpenRequested;
     public event Action? SettingsRequested;
     public event Action? AppearanceRequested;
     public event Action? ExitRequested;
@@ -55,6 +56,8 @@ public sealed class FloatingBall : Window
         menu.Items.Add(new Separator());
         Add(menu, "更换悬浮球形象", () => AppearanceRequested?.Invoke());
         Add(menu, "模型与设置", () => SettingsRequested?.Invoke());
+        Add(menu, "AI 提示词面板", () => AiOpenRequested?.Invoke());
+        aiItem = Add(menu, "开启 AI 优化…", ToggleAi);
         pauseItem = Add(menu, "暂停快捷键", controller.TogglePause);
         Add(menu, "重置悬浮球位置", () => { Place(true); SavePosition(); });
         menu.Items.Add(new Separator());
@@ -106,10 +109,17 @@ public sealed class FloatingBall : Window
     private static MenuItem Add(ContextMenu menu, string text, Action action)
     { var item = new MenuItem { Header = text }; item.Click += (_, _) => action(); menu.Items.Add(item); return item; }
 
+    private async void ToggleAi()
+    {
+        try { await controller.SetAiEnabledAsync(!controller.Settings.AiEnabled); }
+        catch (Exception e) when (e is InvalidOperationException or ArgumentException or System.IO.InvalidDataException or System.IO.IOException or UnauthorizedAccessException)
+        { controller.Notify("AI 开关未更改", e.Message); AiOpenRequested?.Invoke(); }
+    }
+
     private void Refresh()
     {
         bool recording = controller.Phase == SessionPhase.Recording;
-        bool error = !controller.Busy && controller.Status is "无法开始" or "处理失败" or "输入失败" or "下载失败" or "恢复失败";
+        bool error = !controller.Busy && controller.Status is "无法开始" or "处理失败" or "输入失败" or "下载失败" or "恢复失败" or "AI 优化失败" or "AI 连接失败";
         Width = controller.Settings.BallSize; Height = controller.Settings.BallSize + 18;
         Opacity = controller.Settings.BallOpacity;
         label.Text = controller.Settings.OrbStyle switch { "microphone" => "话", "chat" => "聊", _ => "声" };
@@ -117,6 +127,8 @@ public sealed class FloatingBall : Window
         {
             SessionPhase.Recording => $"录音 {controller.Seconds:0}s",
             SessionPhase.Recognizing => "识别中",
+            SessionPhase.Optimizing => "AI 优化中",
+            SessionPhase.AwaitingConfirmation => "待确认",
             SessionPhase.Writing => "验证中",
             SessionPhase.Downloading => $"下载 {controller.DownloadProgress:0}%",
             SessionPhase.Preparing => "准备中",
@@ -138,6 +150,7 @@ public sealed class FloatingBall : Window
         recordItem.Header = recording ? "停止录音" : "开始录音";
         recordItem.IsEnabled = !controller.Busy || recording;
         cancelItem.IsEnabled = controller.Busy;
+        aiItem.Header = controller.Settings.AiEnabled ? "关闭 AI 优化" : "开启 AI 优化…";
         pauseItem.Header = controller.Hotkeys.Paused ? "恢复快捷键" : "暂停快捷键";
         if (IsVisible) NativeMethods.SetWindowPos(new WindowInteropHelper(this).Handle, -1, 0, 0, 0, 0, 0x0013);
     }
