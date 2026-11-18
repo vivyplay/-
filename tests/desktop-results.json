@@ -1,0 +1,122 @@
+[
+  {
+    "test": "桌面程序实际启动",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "启动后待机而非录音",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "无结果时复制、重写及取消按钮禁用",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "悬浮球存在且置顶",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "模型与设置页面可打开",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "第二阶段全部新页签可打开",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "深色主题实际应用并保存",
+    "passed": true,
+    "detail": "浅色亮度 228.8，深色亮度 55.7"
+  },
+  {
+    "test": "深色主题 ComboBox 选项可见",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "跟随系统及浅色主题保存恢复",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "图片选择后显示真实预览",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "非法图片提示且保留当前预览",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "图片拖动裁剪大小透明度及导入保存",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "导入图片脱离原路径且悬浮球立即使用",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "历史界面默认关闭且可查看已有记录",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "历史选中详情及复制操作",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "历史单条删除界面操作",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "历史清空界面操作",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "历史开关保存且不默认开启",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "悬浮球暂停与恢复状态同步",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "模型缺失不启动录音且悬浮球显示错误",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "重复启动仅保留原实例",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "关闭面板后进程和悬浮球保留",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "悬浮球右键菜单可打开",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "右键退出释放进程",
+    "passed": true,
+    "detail": null
+  }
+]

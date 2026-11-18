@@ -1,0 +1,138 @@
+{
+  "stage": "第二阶段",
+  "version": "0.2.0",
+  "validationDate": "2026-11-18",
+  "conclusion": "本轮计划内核心、Debug 实际桌面和新 Release 发布目录回归全部通过。该结论不覆盖下方未验证的真实设备和系统环境。",
+  "environment": {
+    "os": "Windows 11，10.0.26200，x64",
+    "dotnetSdk": "10.0.202",
+    "targetFramework": "net10.0-windows",
+    "desktopDisplayScaleObserved": "125%",
+    "testDataIsolation": "桌面进程通过 SUISHENG_DATA_DIRECTORY 使用 tests/desktop-data-* 隔离目录，不读取或删除真实用户历史。"
+  },
+  "commands": [
+    {
+      "purpose": "核心及 Debug 实际桌面全量回归",
+      "command": "MSYS_NO_PATHCONV=1 cmd.exe /c \"tests\\run-tests.cmd\"",
+      "exitCode": 0
+    },
+    {
+      "purpose": "生成独立第二阶段 self-contained Release，不覆盖旧 stage1 目录",
+      "command": "MSYS_NO_PATHCONV=1 cmd.exe /c \"packaging\\build.cmd\"",
+      "exitCode": 0
+    },
+    {
+      "purpose": "新 Release 实际桌面及发布目录 Base 模型校验",
+      "command": "\"tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe\" \"tests/.\" --desktop --executable \"dist/Suisheng-stage2-win-x64/Suisheng.exe\"",
+      "exitCode": 0
+    },
+    {
+      "purpose": "补充图片预览截图后复验 Debug 和 Release",
+      "command": "dotnet build \"tests/Suisheng.Tests.csproj\" -c Debug && \"tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe\" \"tests/.\" --desktop && \"tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe\" \"tests/.\" --desktop --executable \"dist/Suisheng-stage2-win-x64/Suisheng.exe\"",
+      "exitCode": 0
+    }
+  ],
+  "results": {
+    "core": {
+      "report": "tests/test-results.json",
+      "total": 71,
+      "passed": 71,
+      "failed": 0,
+      "existingStage1RegressionAssertions": 34,
+      "additionalStage2Assertions": 37,
+      "includes": [
+        "真实 SendInput 全局按键长按、松键一次及不重复触发",
+        "静音阈值边界、最长录音边界、文字处理、替换和旧设置兼容",
+        "历史默认关闭、期限、100 条上限、单删、清空及损坏文件保护",
+        "透明 PNG、JPEG、裁剪、独立导入、格式伪装及非法图片拒绝",
+        "原有真实本地 CPU Whisper 识别、取消和安全 Unicode 写入链路回归"
+      ]
+    },
+    "debugDesktop": {
+      "report": "tests/desktop-results.json",
+      "total": 24,
+      "passed": 24,
+      "failed": 0,
+      "includes": "实际 WPF 启动、全部新页签、主题、图片对话框和预览、拖动裁剪、历史界面、悬浮球暂停/恢复、模型缺失错误状态、单实例及退出。"
+    },
+    "releaseDesktop": {
+      "report": "tests/desktop-release-results.json",
+      "total": 26,
+      "passed": 26,
+      "failed": 0,
+      "includes": "对新 dist/Suisheng-stage2-win-x64 目录执行同一套桌面流程，并额外验证默认 Base 模型和模型 SHA-256。未使用旧 0.1.0 包结果代替。"
+    },
+    "combinedAssertions": {
+      "total": 121,
+      "passed": 121,
+      "failed": 0
+    },
+    "build": {
+      "configuration": "Debug 测试构建和 Release 发布构建",
+      "errors": 0,
+      "warnings": 0
+    }
+  },
+  "release": {
+    "directory": "dist/Suisheng-stage2-win-x64",
+    "executable": "dist/Suisheng-stage2-win-x64/Suisheng.exe",
+    "kind": "win-x64 self-contained 目录发布，不是安装包",
+    "version": "0.2.0",
+    "baseModel": "models/ggml-base.bin",
+    "baseModelBytes": 147951465,
+    "baseModelSha256": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe",
+    "applicationDllSha256": "02564de896be6279c232c47a0cf8c038e7c71706e5b3a97cec4534d2687c7dce",
+    "licensesIncluded": true,
+    "oldStage1DirectoryModified": false
+  },
+  "changesAndFixes": [
+    "新增 Stage2Tests 和 Stage2DesktopTests，覆盖按住说话、静音、文字处理、设置、历史、图片及实际桌面操作。",
+    "切换录音模式时清理旧按住状态，避免残留 pressSeen。",
+    "替换规则改为最长原词优先的一次性字面替换，修复级联替换及 $、反斜杠目标被解释的问题。",
+    "加强损坏历史保护，拒绝 null 结构、非法字段和重复 ID；存在读取警告时不覆盖原损坏文件。",
+    "图片按真实 PNG/JPEG 解码器和单帧检查，不再只信任扩展名；补充 FileFormatException 防护。",
+    "图片保存后立即刷新预览状态，修复仍显示尚未导入的问题。",
+    "悬浮球新增无法开始、处理失败、输入失败等红色错误状态，不再错误显示待机。",
+    "修复深色主题页签、正文、标题、复选框及 ComboBox 的前景背景对比度；已人工查看 Debug 和 Release 截图。",
+    "新增测试数据目录覆盖，避免桌面自动化误写真实用户设置或历史。",
+    "系统文件对话框和消息框测试改用 Win32 定位、真实鼠标及 SendInput，保留真实导入流程。",
+    "发布脚本输出到独立 Suisheng-stage2-win-x64，包含 Base 模型和许可。",
+    "未修改第一阶段 TargetInputService 安全写入链路。"
+  ],
+  "visualEvidence": {
+    "manuallyInspected": true,
+    "files": [
+      "tests/stage2-light.png",
+      "tests/stage2-dark.png",
+      "tests/stage2-theme-dropdown.png",
+      "tests/stage2-avatar-preview.png",
+      "tests/stage2-custom-ball.png",
+      "tests/stage2-error-ball.png",
+      "tests/stage2-release-dark.png",
+      "tests/stage2-release-theme-dropdown.png",
+      "tests/stage2-release-avatar-preview.png",
+      "tests/stage2-release-custom-ball.png",
+      "tests/stage2-release-error-ball.png"
+    ],
+    "confirmed": "深浅主题正文与 ComboBox 可读，新图片实际出现在预览，自定义图片应用于悬浮球，模型缺失时显示红色错误状态。"
+  },
+  "notVerified": [
+    "本轮未使用真人麦克风和真人语音完成第二阶段端到端录音、识别、自动写入；核心识别使用真实本地 Whisper 和测试音频。",
+    "真实设备上的环境噪声、静音自动结束、最长时长等待、麦克风热插拔、无设备和权限拒绝场景未完整实测。",
+    "真实物理键盘长按未人工操作；本轮通过 SendInput 产生真实 Windows 全局按键消息。",
+    "完整会话中的连续快速开始/取消/松键、设备断开和目标窗口变化组合竞态未做压力测试。",
+    "锁屏、解锁、休眠、睡眠恢复和远程会话切换的实际系统事件未验证。",
+    "开机自启动在注销、重启后的实际行为未验证；本轮未修改启动项。",
+    "Windows 10、多显示器、混合 DPI、不同缩放比例和高对比度主题未验证。",
+    "记事本以外的第三方应用、管理员权限差异、密码框和安全桌面未做扩展兼容测试；不会绕过 Windows 安全限制。",
+    "跟随 Windows 系统主题已验证设置保存恢复，但未在运行中实际切换操作系统主题验证事件响应。",
+    "历史文件的各种非预期损坏结构未穷举；已验证损坏 JSON、null 项和 null 文本保护。"
+  ],
+  "knownLimitations": [
+    "静音检测是简单音量阈值，不是完整 VAD，可能受环境噪音影响。",
+    "历史默认关闭，主动开启后以未加密 JSON 保存，最多 100 条；过期项在读取或新增时清理。",
+    "发布物是免安装目录，不包含正式安装、卸载、签名或在线更新。",
+    "当前没有外部 AI API、安全凭据、提示词模板或优化结果预览确认写入功能。"
+  ],
+  "nextStageRecommendation": "先补真人麦克风、真实静音/长录音、系统事件及多屏/Windows 10 实机验收。上述基础验收完成后，再按阶段设计外部 AI API、安全凭据、提示词模板和预览确认写入，仍不自动发送或提交。"
+}

@@ -1,0 +1,38 @@
+# .NET build outputs
+**/bin/
+**/obj/
+.vs/
+TestResults/
+*.user
+*.suo
+
+# Local release outputs and large speech models
+dist/
+**/ggml-*.bin
+
+# Desktop test isolation and temporary data
+tests/desktop-data-*/
+tests/isolated-*/
+tests/stage2-*/
+tests/dialog-*.png
+tests/stage2-invalid.png
+tests/stage2-release-invalid.png
+
+# Partial writes and local archives
+*.new
+*.part
+*.tmp
+*.zip
+*.7z
+
+# Local secrets must never be committed
+.env
+.env.*
+secrets.json
+*.pfx
+*.p12
+*.key
+
+# Windows metadata
+Thumbs.db
+Desktop.ini

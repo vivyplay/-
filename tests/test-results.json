@@ -1,0 +1,357 @@
+[
+  {
+    "test": "设置原子保存与恢复",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "非法设置拒绝",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "损坏设置保留并回退",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "拒绝换行、Tab、空文本和超长文本",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "中文英文和 Unicode 文本允许",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "快捷键格式",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "全局热键注册与冲突拒绝",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "暂停和恢复热键",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "真实模型 SHA-256 校验",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "损坏模型拒绝",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "大小正确但哈希错误的模型拒绝",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "缺失模型拒绝",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "识别开始前取消",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "本地 CPU 真实识别 en",
+    "passed": true,
+    "detail": "合成音频结果：Hello. This is a voice input test. The software converts speech into text.；耗时 0.70s"
+  },
+  {
+    "test": "本地 CPU 真实识别 zh",
+    "passed": true,
+    "detail": "合成音频结果：你好,这是一个语音收入词事我们正在词是软件的本地时别功能；耗时 0.57s"
+  },
+  {
+    "test": "排队中的识别可取消（第 1 次）",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "识别任务启动后取消且不返回文本（第 1 次）",
+    "passed": true,
+    "detail": "取消等待 0.98s"
+  },
+  {
+    "test": "排队中的识别可取消（第 2 次）",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "识别任务启动后取消且不返回文本（第 2 次）",
+    "passed": true,
+    "detail": "取消等待 0.07s"
+  },
+  {
+    "test": "排队中的识别可取消（第 3 次）",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "识别任务启动后取消且不返回文本（第 3 次）",
+    "passed": true,
+    "detail": "取消等待 0.11s"
+  },
+  {
+    "test": "取消后仍可识别 Base 中文关键词",
+    "passed": true,
+    "detail": "你好,这是一个语音输入测试。我们正在测试软件的本地识别功能。"
+  },
+  {
+    "test": "捕获真实外部输入框",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "真实 Unicode 输入保留前文",
+    "passed": true,
+    "detail": "seed你好 Voice 123 / 文字输入事件已提交，请检查目标应用；结果仍可复制。"
+  },
+  {
+    "test": "自动输入不修改剪贴板",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "焦点改变阻止写入",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "密码框捕获被拒绝",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "只读输入框捕获被拒绝",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "切换焦点再返回也阻止旧目标写入",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "真实输入拒绝回车",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "光标改变阻止写入",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "取消写入",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "选区替换及补充平面 Unicode 写入",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "目标关闭阻止写入",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "按住说话未真正按下不误停",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "按住说话松键只结束一次",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "按住说话结束后停止轮询",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "真实全局按键长按不重复触发且松键结束一次",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "静音检测未出声不提前结束",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "静音检测声音后到达等待边界才结束",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "最长录音时长边界独立有效",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "词语替换最长优先且不级联",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "词语替换忽略大小写",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "替换目标按字面文本处理",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "非法及重复替换规则拒绝",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "口语词清理默认关闭",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "可选口语词只清理分隔词",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "基础排版合并空格与 Tab",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "自动标点与空结果边界",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "文字处理拒绝控制字符和超长结果",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "旧设置 JSON 使用第二阶段安全缺省值",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "第二阶段全部新设置保存恢复",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "第二阶段新设置非法范围全部拒绝",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "非法新设置保留文件并回退",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "历史默认关闭且不创建文件",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "历史主动开启后新增及原文保存",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "历史保留期限过滤",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "历史最多保留最新 100 条",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "历史单条删除不影响其他记录",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "历史清空删除数据文件",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "关闭保留原文时历史不存原文",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "损坏历史保护 broken-json",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "损坏历史保护 null-entry",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "损坏历史保护 null-text",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "透明 PNG 解码及尺寸读取",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "裁剪矩形缩放与位置边界",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "裁剪输出保留透明背景",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "导入不修改原图并脱离原路径",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "JPEG 静态图片支持",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "图片格式大小像素及非法文件限制",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "非法图片不破坏原有形象",
+    "passed": true,
+    "detail": null
+  }
+]
