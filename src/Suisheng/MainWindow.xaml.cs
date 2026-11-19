@@ -25,6 +25,7 @@ public partial class MainWindow : Window
     public bool AllowClose { get; set; }
     public event Action? ExitRequested;
     public event Action? AiOpenRequested;
+    public event Action? OnboardingOpenRequested;
 
     public MainWindow(SessionController controller)
     {
@@ -119,7 +120,29 @@ public partial class MainWindow : Window
     private async void Cancel_Click(object sender, RoutedEventArgs e) => await controller.CancelAsync();
     private async void TestMicrophone_Click(object sender, RoutedEventArgs e) => await controller.TestMicrophoneAsync();
     private void OpenSettings_Click(object sender, RoutedEventArgs e) => Tabs.SelectedIndex = 1;
-    private void OpenAi_Click(object sender, RoutedEventArgs e) => AiOpenRequested?.Invoke();
+    internal void OpenAiPanel() => AiOpenRequested?.Invoke();
+    private void OpenAi_Click(object sender, RoutedEventArgs e) => OpenAiPanel();
+    private void OpenOnboarding_Click(object sender, RoutedEventArgs e) => OnboardingOpenRequested?.Invoke();
+    private void ExportDiagnostics_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = "导出不含正文和密钥的诊断信息",
+            Filter = "JSON 文件 (*.json)|*.json",
+            FileName = "Suisheng-diagnostics-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".json"
+        };
+        if (dialog.ShowDialog(this) != true) return;
+        try
+        {
+            int microphones = AudioRecorder.GetDevices().Count;
+            bool startup = StartupRegistration.Enabled;
+            bool modelPresent = File.Exists(RecognitionService.ModelPath(controller.Settings));
+            DiagnosticExporter.Export(dialog.FileName, controller.Settings, microphones, modelPresent, startup);
+            MessageBox.Show(this, "诊断信息已导出。文件不包含音频、正文、接口地址、目录路径或密钥。", "导出完成");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        { MessageBox.Show(this, "无法写入所选位置，请检查文件权限后重试。", "导出失败"); }
+    }
     private async void AiEnabled_Click(object sender, RoutedEventArgs e)
     {
         if (updatingAi) return;
@@ -173,7 +196,8 @@ public partial class MainWindow : Window
                 BallLeft = old.BallLeft, BallTop = old.BallTop,
                 AiEnabled = old.AiEnabled, AiEndpoint = old.AiEndpoint, AiModel = old.AiModel,
                 AiTimeoutSeconds = old.AiTimeoutSeconds, AiTemplateId = old.AiTemplateId,
-                AiInstructions = old.AiInstructions, AiStrength = old.AiStrength, AiAllowExpansion = old.AiAllowExpansion
+                AiInstructions = old.AiInstructions, AiStrength = old.AiStrength, AiAllowExpansion = old.AiAllowExpansion,
+                OnboardingCompleted = old.OnboardingCompleted
             };
             if (avatarImage == null) { settings.OrbImagePath = ""; settings.AvatarSourcePath = ""; }
             else if (pendingAvatarSource != null)

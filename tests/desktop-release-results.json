@@ -1,5 +1,10 @@
 [
   {
+    "test": "首次启动六项引导完整展示并持久化",
+    "passed": true,
+    "detail": "找到=True；六页=True；保存=True"
+  },
+  {
     "test": "桌面程序实际启动",
     "passed": true,
     "detail": null
@@ -52,7 +57,7 @@
   {
     "test": "深色主题实际应用并保存",
     "passed": true,
-    "detail": "浅色亮度 232.6，深色亮度 59.6"
+    "detail": "浅色亮度 233.3，深色亮度 58.8"
   },
   {
     "test": "深色主题 ComboBox 选项可见",
@@ -182,7 +187,17 @@
   {
     "test": "AI 面板深色主题实际应用",
     "passed": true,
-    "detail": "深色亮度=59.0"
+    "detail": "深色亮度=59.2"
+  },
+  {
+    "test": "帮助页手动更新说明及重新打开首次引导",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "界面通过真实保存对话框导出安全诊断",
+    "passed": true,
+    "detail": "对话框=True；关闭=True；编辑框=False；保存按钮=True；完成提示=False；文件有效=True"
   },
   {
     "test": "重复启动仅保留原实例",

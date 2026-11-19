@@ -36,7 +36,7 @@ internal static class Stage2DesktopTests
             tabsOpened &= Find(tab.Anchor) != null;
         }
         await SelectTab(panel, "阶段与帮助");
-        bool versionVisible = panel.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text)).Cast<AutomationElement>().Any(element => element.Current.Name.Contains("当前版本 0.3.1"));
+        bool versionVisible = panel.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text)).Cast<AutomationElement>().Any(element => element.Current.Name.Contains("当前版本 0.4.0"));
         Program.Record("第二阶段全部新页签可打开", tabsOpened && versionVisible, $"页签={tabsOpened}；版本文本={versionVisible}");
 
         await SelectTab(panel, "模型与录音");

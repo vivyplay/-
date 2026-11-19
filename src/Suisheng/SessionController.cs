@@ -24,6 +24,7 @@ public sealed class SessionController : IDisposable
     private InputTarget? target;
     private bool microphoneTest;
     public SettingsStore Store { get; } = new();
+    public bool IsFirstRun => !Store.Exists && !Settings.OnboardingCompleted;
     public UserSettings Settings { get; private set; }
     public HotkeyService Hotkeys { get; } = new();
     public SessionPhase Phase { get; private set; }
@@ -334,6 +335,16 @@ public sealed class SessionController : IDisposable
         }
         catch (OperationCanceledException) { Finish("已取消", "没有继续写入文字。"); }
         catch (Exception e) { Finish("输入失败", Friendly(e)); }
+    }
+
+    public void CompleteOnboarding()
+    {
+        if (Busy) throw new InvalidOperationException("请等待当前任务结束后再关闭引导。");
+        var settings = Settings.Clone();
+        settings.OnboardingCompleted = true;
+        Store.Save(settings);
+        Settings = settings;
+        Changed?.Invoke();
     }
 
     public void SaveSettings(UserSettings settings)

@@ -72,12 +72,12 @@
   {
     "test": "本地 CPU 真实识别 en",
     "passed": true,
-    "detail": "合成音频结果：Hello. This is a voice input test. The software converts speech into text.；耗时 0.44s"
+    "detail": "合成音频结果：Hello. This is a voice input test. The software converts speech into text.；耗时 0.53s"
   },
   {
     "test": "本地 CPU 真实识别 zh",
     "passed": true,
-    "detail": "合成音频结果：你好,这是一个语音收入词事我们正在词是软件的本地时别功能；耗时 0.46s"
+    "detail": "合成音频结果：你好,这是一个语音收入词事我们正在词是软件的本地时别功能；耗时 0.42s"
   },
   {
     "test": "排队中的识别可取消（第 1 次）",
@@ -87,7 +87,7 @@
   {
     "test": "识别任务启动后取消且不返回文本（第 1 次）",
     "passed": true,
-    "detail": "取消等待 0.50s"
+    "detail": "取消等待 0.46s"
   },
   {
     "test": "排队中的识别可取消（第 2 次）",
@@ -97,7 +97,7 @@
   {
     "test": "识别任务启动后取消且不返回文本（第 2 次）",
     "passed": true,
-    "detail": "取消等待 0.51s"
+    "detail": "取消等待 0.59s"
   },
   {
     "test": "排队中的识别可取消（第 3 次）",
@@ -107,7 +107,7 @@
   {
     "test": "识别任务启动后取消且不返回文本（第 3 次）",
     "passed": true,
-    "detail": "取消等待 0.55s"
+    "detail": "取消等待 0.59s"
   },
   {
     "test": "取消后仍可识别 Base 中文关键词",
@@ -182,7 +182,7 @@
   {
     "test": "记事本完整 Unicode 实际接收",
     "passed": true,
-    "detail": "提交=True；预期=1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。；实际=1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。；文件=C:\\Users\\23309\\Documents\\Qoder\\2026-11-17\\59db6f65\\tests\\notepad-write-96a61f08a14a4ee9ae3cfe05f057f598.txt；程序集=C:\\Users\\23309\\Documents\\Qoder\\2026-11-17\\59db6f65\\tests\\bin\\Debug\\net10.0-windows\\win-x64\\Suisheng.dll"
+    "detail": "提交=True；预期=1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。；实际=1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。；文件=C:\\Users\\23309\\Documents\\Qoder\\2026-11-17\\59db6f65\\tests\\notepad-write-f723072165544bda880125280a99e41e.txt；程序集=C:\\Users\\23309\\Documents\\Qoder\\2026-11-17\\59db6f65\\tests\\bin\\Debug\\net10.0-windows\\win-x64\\Suisheng.dll"
   },
   {
     "test": "按住说话未触发时不轮询或误停",
@@ -506,6 +506,31 @@
   },
   {
     "test": "关闭 AI 不要求有效 API 配置",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "旧版设置缺省兼容且首次引导默认未完成",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "首次引导完成状态持久化",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "诊断白名单不含路径接口正文历史或密钥",
+    "passed": true,
+    "detail": "{\r\n  \"schema\": 1,\r\n  \"exportedUtc\": \"2026-11-19T05:45:15.7072721+00:00\",\r\n  \"applicationVersion\": \"0.4.0\\u002B712421e44203a61a598e279c9f6f9d350c0708cf\",\r\n  \"os\": \"Microsoft Windows 10.0.26200\",\r\n  \"osArchitecture\": \"X64\",\r\n  \"processArchitecture\": \"X64\",\r\n  \"runtime\": \".NET 10.0.6\",\r\n  \"microphoneCount\": 2,\r\n  \"model\": {\r\n    \"id\": \"base\",\r\n    \"filePresent\": true,\r\n    \"location\": \"user-selected-directory\"\r\n  },\r\n  \"preferences\": {\r\n    \"language\": \"zh\",\r\n    \"recordingMode\": \"toggle\",\r\n    \"theme\": \"light\",\r\n    \"silenceDetection\": false,\r\n    \"historyEnabled\": true,\r\n    \"aiEnabled\": false,\r\n    \"onboardingCompleted\": true\r\n  },\r\n  \"startupEnabled\": true\r\n}"
+  },
+  {
+    "test": "诊断导出原子替换且不遗留临时正文",
+    "passed": true,
+    "detail": null
+  },
+  {
+    "test": "安装脚本静态安全约束（非实机安装验收）",
     "passed": true,
     "detail": null
   }

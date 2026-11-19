@@ -15,6 +15,7 @@ public sealed class App : Application
     private MainWindow? panel;
     private FloatingBall? ball;
     private AiWindow? aiWindow;
+    private OnboardingWindow? onboarding;
     private Forms.NotifyIcon? tray;
     private Icon? trayIcon;
     private bool exiting;
@@ -48,6 +49,7 @@ public sealed class App : Application
         ball.SettingsRequested += () => panel.Open(true);
         ball.AppearanceRequested += () => panel.Open(appearance: true);
         panel.AiOpenRequested += () => aiWindow.Open(false);
+        panel.OnboardingOpenRequested += ShowOnboarding;
         ball.AiOpenRequested += () => aiWindow.Open(false);
         controller.AiPanelRequested += session => aiWindow.Open(session);
         controller.ShowRequested += () => panel.Open();
@@ -72,7 +74,9 @@ public sealed class App : Application
         SystemEvents.SessionSwitch += OnSessionSwitch;
         SystemEvents.PowerModeChanged += OnPowerModeChanged;
         ball.Show();
-        if (!controller.Settings.StartMinimized && Array.IndexOf(e.Args, "--background") < 0) panel.Show();
+        bool firstRun = controller.IsFirstRun;
+        if (firstRun || (!controller.Settings.StartMinimized && Array.IndexOf(e.Args, "--background") < 0)) panel.Show();
+        if (firstRun) ShowOnboarding();
         DispatcherUnhandledException += (_, args) =>
         {
             args.Handled = true;
@@ -104,11 +108,24 @@ public sealed class App : Application
         { controller.Notify("AI 开关未更改", e.Message); aiWindow?.Open(false); }
     }
 
+    private void ShowOnboarding()
+    {
+        if (controller == null || panel == null) return;
+        if (onboarding == null)
+        {
+            onboarding = new OnboardingWindow(controller, panel);
+            onboarding.Closed += (_, _) => onboarding = null;
+        }
+        onboarding.Show();
+        onboarding.Activate();
+    }
+
     private async Task ExitAsync()
     {
         if (exiting) return;
         exiting = true;
         if (controller != null) await controller.CancelAsync();
+        onboarding?.Close();
         if (panel != null) { panel.AllowClose = true; panel.Close(); }
         if (aiWindow != null) { aiWindow.AllowClose = true; aiWindow.Close(); }
         ball?.Close();

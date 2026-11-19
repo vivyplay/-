@@ -24,6 +24,12 @@ tests/stage2-invalid.png
 tests/stage2-release-invalid.png
 tests/stage3-invalid.png
 tests/stage3-release-invalid.png
+tests/stage4-invalid.png
+tests/stage4-release-invalid.png
+tests/stage4-*/
+tests/stage4-diagnostics-ui.json
+tests/installer-validation-*/
+tests/inno-old-build.log
 
 # Partial writes and local archives
 *.new

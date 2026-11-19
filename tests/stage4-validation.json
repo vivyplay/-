@@ -1,0 +1,189 @@
+{
+  "stage": "正式分发阶段",
+  "version": "0.4.0",
+  "validationDate": "2026-11-19",
+  "conclusion": "0.4.0 已实现每用户安装、旧版覆盖升级、卸载、启动项清理、交互卸载时的数据保留选择、六页首次引导、手动更新说明和用户主动导出的白名单诊断。最终核心、Debug 桌面、Release 桌面、已安装程序桌面及 Release DLL 真实记事本接收报告均通过。实际安装生命周期验证了 0.3.1 隔离安装、升级到 0.4.0、已安装程序 44 项桌面回归、卸载、启动项清理、真实用户数据不变、其他文件保留及测试后启动项恢复。主动选择删除用户数据、交互安装向导和快捷方式操作未做完整实机验收，明确保留为未验证。",
+  "environment": {
+    "os": "Windows 11，10.0.26200，x64",
+    "dotnetSdk": "10.0.202",
+    "targetFramework": "net10.0-windows",
+    "installerCompiler": "Inno Setup 6.7.3",
+    "desktopDisplayScaleObserved": "125%",
+    "testDataIsolation": "桌面和已安装程序回归通过 SUISHENG_DATA_DIRECTORY 使用 tests/desktop-data-* 或安装测试隔离目录，不用隔离结果冒充真实聊天或游戏兼容。",
+    "realUserDataProtection": "安装生命周期只比较真实 %LOCALAPPDATA%\\Suisheng 前后文件的相对路径、长度和 SHA-256 指纹是否变化，不导出设置正文、历史、模型或 DPAPI 密钥。",
+    "startupProtection": "测试前读取用户原有 Suisheng 启动项原始值和 RegistryValueKind，卸载验证清理后在 finally 中恢复并再次核验。"
+  },
+  "commands": [
+    {
+      "purpose": "构建并运行完整核心、历史阶段、第四阶段及 Debug 真实记事本接收测试",
+      "command": "dotnet build tests/Suisheng.Tests.csproj -c Debug; tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe tests/.",
+      "exitCode": 0
+    },
+    {
+      "purpose": "完整 Debug 实际桌面回归",
+      "command": "tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe tests/. --desktop",
+      "exitCode": 0
+    },
+    {
+      "purpose": "生成 0.4.0 self-contained Release 和正式安装包",
+      "command": "packaging/build-installer.cmd",
+      "exitCode": 0
+    },
+    {
+      "purpose": "对本次 0.4.0 Release 运行完整桌面回归及模型校验",
+      "command": "tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe tests/. --desktop --executable dist/Suisheng-stage4-0.4.0-win-x64/Suisheng.exe",
+      "exitCode": 0
+    },
+    {
+      "purpose": "直接加载 0.4.0 Release Suisheng.dll，验证真实记事本完整中文接收",
+      "command": "tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe tests/. --notepad-write --executable dist/Suisheng-stage4-0.4.0-win-x64/Suisheng.exe",
+      "exitCode": 0
+    },
+    {
+      "purpose": "从真实 0.3.1 Release 构建旧安装包，执行隔离安装、0.4.0 覆盖升级、已安装桌面回归和保留数据的静默卸载",
+      "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File tests/Stage4InstallerTests.ps1 -OldInstaller <0.3.1-validation-installer> -NewInstaller dist/Suisheng-Setup-0.4.0-win-x64.exe -TestRunner tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe -TestsRoot <absolute-tests-directory>",
+      "exitCode": 0,
+      "note": "尖括号表示运行时传入的本机绝对路径，不是可直接照抄的固定路径。安装和升级使用 /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /NOCANCEL /NOICONS；卸载使用 /VERYSILENT /SUPPRESSMSGBOXES /NORESTART。"
+    }
+  ],
+  "results": {
+    "core": {
+      "report": "tests/test-results.json",
+      "total": 107,
+      "passed": 107,
+      "failed": 0,
+      "previousStageAssertions": 102,
+      "stage4Assertions": 5,
+      "includes": [
+        "旧设置缺省兼容、首次引导默认未完成和完成状态持久化",
+        "诊断白名单不包含路径、接口、正文、历史或密钥标记",
+        "诊断原子替换且不遗留 .new 临时文件",
+        "安装脚本静态安全约束；该项不替代真实安装验收",
+        "原有真实本地 Whisper、AI 契约/状态、安全 Unicode 写入及真实记事本回归"
+      ]
+    },
+    "debugDesktop": {
+      "report": "tests/desktop-results.json",
+      "total": 42,
+      "passed": 42,
+      "failed": 0,
+      "includes": "完整第二、第三阶段桌面回归，加首次启动六页引导及持久化、帮助页手动更新说明、重新打开引导、真实系统保存对话框导出安全诊断；使用 stage4 截图前缀。"
+    },
+    "releaseDesktop": {
+      "report": "tests/desktop-release-results.json",
+      "total": 44,
+      "passed": 44,
+      "failed": 0,
+      "includes": "对本次 0.4.0 Release 执行同一套完整桌面流程，并额外验证默认 Base 模型和模型 SHA-256；使用 stage4-release 截图前缀。"
+    },
+    "installedDesktop": {
+      "report": "tests/installed-desktop-results.json",
+      "total": 44,
+      "passed": 44,
+      "failed": 0,
+      "includes": "对隔离目录中已由 0.3.1 覆盖升级到 0.4.0 的实际安装程序执行完整桌面回归。该报告单独保存，未被后续 Release 目录回归覆盖。"
+    },
+    "releaseNotepad": {
+      "report": "tests/notepad-write-release-results.json",
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "loadedAssembly": "dist/Suisheng-stage4-0.4.0-win-x64/Suisheng.dll",
+      "actualReceivedText": "1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。"
+    },
+    "installerLifecycle": {
+      "report": "tests/installer-results.json",
+      "total": 7,
+      "passed": 6,
+      "failed": 0,
+      "unverified": 1,
+      "passedItems": [
+        "隔离目录安装 0.3.1",
+        "0.3.1 覆盖升级为 0.4.0，安装目录无关文件和外部用户文件保留",
+        "已安装 0.4.0 完整桌面回归 44 项通过",
+        "卸载程序文件并清理本软件启动项",
+        "静默卸载默认保留真实用户数据，且不删除其他文件",
+        "测试后恢复用户原开机启动项及原始值类型"
+      ],
+      "unverifiedItem": "卸载时由用户主动选择“是”删除默认用户数据；为避免删除真实设置、模型和 DPAPI 密钥，只执行保留分支，删除分支仅做脚本静态检查。"
+    },
+    "combinedAssertions": {
+      "total": 195,
+      "passed": 195,
+      "failed": 0,
+      "note": "合计为核心 107、Debug 桌面 42、Release 桌面 44、Release 记事本 2。已安装桌面 44 项是另一环境的重复回归，安装生命周期 6 项通过和 1 项未验证单独记录，均不重复并入 195。"
+    },
+    "build": {
+      "debugErrors": 0,
+      "debugWarnings": 0,
+      "releasePublishExitCode": 0,
+      "installerCompileExitCode": 0
+    }
+  },
+  "automationNotes": {
+    "diagnosticSaveDialog": "早期自动查找系统保存对话框文件名编辑框多次失败；最终使用 SetForegroundWindow、Alt+N、Ctrl+A、SendKeys 输入路径和真实鼠标点击保存，实际文件成功生成且 JSON 校验通过。完成提示框自动识别曾返回 false，因此最终通过条件是对话框关闭和实际文件有效，不将提示框识别结果伪装为产品通过。",
+    "installedDesktopRetry": "一次安装后桌面回归在 Stage2DesktopTests.SelectComboItem 中找不到“跟随 Windows 系统”，且当时卸载仍受旧 /LOG 参数影响。修正卸载参数并完整重跑后，已安装 0.4.0 最终 44/44 通过。该历史失败保留记录，不扩大宣称所有 UI 自动化竞态均已验证。",
+    "uninstallerArguments": "卸载器使用 /NOCANCEL 或 /LOG 的早期尝试返回 1 且未真正完成；最终使用 /VERYSILENT /SUPPRESSMSGBOXES /NORESTART 返回 0，程序文件删除、启动项清理及数据保留均经实际检查。",
+    "interpretation": "最终报告全部通过不等于所有交互安装、快捷方式、目标应用、系统环境或组合竞态均已验收。"
+  },
+  "release": {
+    "installer": "dist/Suisheng-Setup-0.4.0-win-x64.exe",
+    "installerBytes": 183816633,
+    "installerFileVersion": "0.4.0.0",
+    "installerSha256": "3f41da28ce7a7f83490a0e521b580be2374f188e251a820bb8123ccdbb1e193d",
+    "directory": "dist/Suisheng-stage4-0.4.0-win-x64",
+    "executable": "dist/Suisheng-stage4-0.4.0-win-x64/Suisheng.exe",
+    "executableBytes": 162816,
+    "applicationDllBytes": 210944,
+    "fileVersion": "0.4.0.0",
+    "applicationDllSha256": "65f3698edb880247a7b27624921a1f74c9f3197fde789cb09a73f9d461dcf656",
+    "baseModel": "models/ggml-base.bin",
+    "baseModelBytes": 147951465,
+    "baseModelSha256": "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe",
+    "licenseFiles": 4,
+    "kind": "win-x64 self-contained 目录及 Inno Setup 每用户安装包；免安装目录必须完整保留，不能只复制 EXE。",
+    "oldStageDirectoriesModified": false
+  },
+  "implemented": [
+    "Inno Setup 每用户安装，默认目录为 %LOCALAPPDATA%\\Programs\\Suisheng，PrivilegesRequired=lowest，默认不要求管理员权限。",
+    "固定 AppId 和应用 Mutex，支持关闭运行中的程序并使用新版安装包覆盖升级；实际从 0.3.1 升级到 0.4.0。",
+    "开始菜单快捷方式和默认不选中的桌面图标任务；卸载删除本软件注册的 HKCU Suisheng 启动项。",
+    "交互卸载明确询问是否删除默认 %LOCALAPPDATA%\\Suisheng 用户数据；静默卸载默认保留，不递归删除用户自选目录或安装目录中的其他文件。",
+    "首次运行六页引导，覆盖麦克风、模型、快捷键、悬浮球、安全输入测试和可选 AI 数据发送；不自动录音、下载模型或发送 AI 请求。",
+    "OnboardingCompleted 持久化及旧设置兼容；已有设置不会因缺省字段被当成首次运行，帮助页可重新打开引导。",
+    "帮助页提供真实手动更新步骤并明确当前没有在线更新服务，不制作虚假在线更新。",
+    "用户主动通过系统保存对话框导出白名单诊断；不导出音频、正文、历史、剪贴板、完整 AI 请求、接口地址、完整目录路径或密钥。",
+    "诊断采用临时 .new 文件后原子替换；模型位置只导出 application-directory、default-user-data 或 user-selected-directory 类别。",
+    "正式安装包和 self-contained 目录均包含 Base 模型及 4 份许可文件。"
+  ],
+  "visualEvidence": {
+    "manuallyInspected": true,
+    "files": [
+      "tests/stage4-onboarding.png",
+      "tests/stage4-ai-api.png",
+      "tests/stage4-ai-templates.png",
+      "tests/stage4-ai-preview.png",
+      "tests/stage4-ai-dark.png",
+      "tests/stage4-release-main.png",
+      "tests/stage4-release-onboarding.png"
+    ],
+    "confirmed": "已查看第四阶段首次引导、主界面及 AI 浅色/深色截图；引导六页由真实 WPF 桌面自动化遍历，主界面版本显示 0.4.0。"
+  },
+  "notVerified": [
+    "卸载时主动选择“是”删除用户数据未实机执行；只验证保留分支和删除脚本静态约束。",
+    "交互安装向导逐页操作、开始菜单和桌面快捷方式点击、安装完成启动选项以及 Windows“应用和功能”界面卸载未单独验收；实际生命周期使用静默模式和 /NOICONS。",
+    "真实聊天软件和游戏普通输入区域未验证；窗口化、无边框、全屏、权限差异、输入法、焦点及失败后的复制降级需单独验收。",
+    "B2 休眠唤醒后仍录音已复现、尚未解决，按用户明确要求暂缓修复；不得宣称通过。",
+    "自启动后注销或重启、多显示器、混合 DPI、分辨率或显示器变化、Windows 10、高对比度主题未完整验证。",
+    "真人麦克风和语音细分、设备热插拔、权限拒绝、锁屏和远程会话等未完整实测。",
+    "安装包和应用未做代码签名及 SmartScreen 分发验收。",
+    "连续快速安装、升级、取消、卸载和设备或目标切换的组合压力测试未执行。"
+  ],
+  "knownLimitations": [
+    "当前没有在线更新服务；用户需退出程序、运行同系列新版安装包覆盖升级。",
+    "卸载数据选择只针对默认 %LOCALAPPDATA%\\Suisheng，不删除用户在其他目录自行放置的模型或文件。",
+    "包含换行、Tab 等控制字符的结果仍只能复制后手动处理，不自动写入或模拟 Enter。",
+    "安装、升级和卸载验证不能替代真实聊天、游戏、多系统环境和真人设备兼容验收。"
+  ],
+  "nextAction": "向用户交付 0.4.0 安装包及实际验证范围。后续优先进行真实聊天软件和游戏普通输入兼容验收；B2 继续保持未解决且暂缓。第四阶段尚未获得新的 Git 提交或推送指令。"
+}

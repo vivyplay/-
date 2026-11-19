@@ -35,7 +35,7 @@ public static class Program
                 string? executable = executableIndex >= 0 ? args[executableIndex + 1] : null;
                 string report = args.Contains("--desktop") ? (executable != null ? "desktop-release-results.json" : "desktop-results.json") : args.Contains("--notepad-write") ? (executable != null ? "notepad-write-release-results.json" : "notepad-write-results.json") : args.Contains("--ai-only") ? "ai-contract-results.json" : "test-results.json";
                 File.WriteAllText(Path.Combine(root, report), JsonSerializer.Serialize(new[] { new { test = "完整测试运行", passed = false, detail = "测试进行中；若进程已退出，表示测试异常中断。" } }));
-                if (args.Contains("--desktop")) await TestDesktop(root, executable, args.Contains("--ai-desktop-only"));
+                if (args.Contains("--desktop")) await TestDesktop(root, executable, args.Contains("--ai-desktop-only"), args.Contains("--stage4-desktop-only"));
                 else if (args.Contains("--notepad-write")) await TestNotepadWrite(root, executable);
                 else if (args.Contains("--ai-only")) await Stage3Tests.Run(root);
                 else await RunTests(root);
@@ -176,6 +176,7 @@ public static class Program
         await TestNotepadWrite(root);
         await Stage2Tests.Run(root);
         await Stage3Tests.Run(root);
+        Stage4Tests.Run(root);
         Console.WriteLine("测试结束，详见 test-results.json。");
     }
 
@@ -318,10 +319,10 @@ public static class Program
         return task.GetType().GetProperty("Result")!.GetValue(task);
     }
 
-    private static async Task TestDesktop(string root, string? executableOverride, bool aiOnly = false)
+    private static async Task TestDesktop(string root, string? executableOverride, bool aiOnly = false, bool distributionOnly = false)
     {
         string executable = Path.GetFullPath(executableOverride ?? Path.Combine(root, "../src/Suisheng/bin/Debug/net10.0-windows/win-x64/Suisheng.exe"));
-        string screenshotPrefix = executableOverride == null ? "stage3" : "stage3-release";
+        string screenshotPrefix = executableOverride == null ? "stage4" : "stage4-release";
         if (Process.GetProcessesByName("Suisheng").Length != 0)
             throw new InvalidOperationException("请先手动退出正在运行的随声输入；测试不会操作已有实例。");
         string localRoot = Path.Combine(root, "desktop-data-" + Guid.NewGuid().ToString("N"));
@@ -347,6 +348,7 @@ public static class Program
                 if (panel != null) break;
             }
             if (panel == null) throw new InvalidOperationException("找不到桌面主面板");
+            await Stage4DesktopTests.RunFirstRun(process, dataDirectory, root, screenshotPrefix);
             Record("桌面程序实际启动", true);
             AutomationElement Find(string id) => panel.FindFirst(TreeScope.Descendants, new PropertyCondition(AutomationElement.AutomationIdProperty, id));
             Record("启动后待机而非录音", Find("StatusText").Current.Name == "待机");
@@ -378,8 +380,9 @@ public static class Program
                 graphics.CopyFromScreen((int)rect.X, (int)rect.Y, 0, 0, image.Size);
                 image.Save(Path.Combine(root, screenshotPrefix + "-settings.png"), System.Drawing.Imaging.ImageFormat.Png);
             }
-            if (!aiOnly) await Stage2DesktopTests.Run(panel, ball, process, root, dataDirectory, screenshotPrefix);
-            await Stage3DesktopTests.Run(panel, ball, process, root, dataDirectory, screenshotPrefix);
+            if (!aiOnly && !distributionOnly) await Stage2DesktopTests.Run(panel, ball, process, root, dataDirectory, screenshotPrefix);
+            if (!distributionOnly) await Stage3DesktopTests.Run(panel, ball, process, root, dataDirectory, screenshotPrefix);
+            await Stage4DesktopTests.RunHelp(panel, process, dataDirectory, root);
             var secondStart = new ProcessStartInfo(executable) { UseShellExecute = false };
             secondStart.Environment["SUISHENG_DATA_DIRECTORY"] = dataDirectory;
             using var second = Process.Start(secondStart)!;

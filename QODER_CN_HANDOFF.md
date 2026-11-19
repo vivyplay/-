@@ -1,6 +1,6 @@
 # 随声输入：Qoder CN 开发交接
 
-更新日期：2026-11-18。当前版本：0.3.1。真实 DeepSeek 连接、三点优化和预览已由用户使用 0.3.0 实机验证；当时记事本确认写入乱码，0.3.1 已修复并通过自动回归，用户已明确确认修复版实机验收完成。
+更新日期：2026-11-19。当前版本：0.4.0。第四阶段正式分发功能已实现并完成实际安装生命周期验证：0.3.1 隔离安装、覆盖升级到 0.4.0、已安装程序桌面回归、卸载、启动项清理、用户数据保留及测试后启动项恢复均通过；主动删除用户数据分支仍明确标记未验证。第三阶段真实 DeepSeek 和 0.3.1 实机验收结论继续有效。
 
 ## 当前状态速览
 
@@ -8,35 +8,42 @@
 | --- | --- | --- |
 | 第一阶段 0.1.0 | 接手前的历史基线，核心离线语音输入链路已实现 | `dist/Suisheng-stage1-win-x64`，仅作历史对照 |
 | 第二阶段 0.2.1 | 本地功能及回归完成；用户实机确认 A3 长按和快捷键修改通过，B2 仍未解决并暂缓 | `dist/Suisheng-stage2-win-x64` |
-| 第三阶段 0.3.1 | 当前版本；真实 AI 功能及逐字符 Unicode 写入修复已实现，最终四份自动报告通过，用户实机验收完成 | `dist/Suisheng-stage3-0.3.1-win-x64` |
+| 第三阶段 0.3.1 | 真实 AI 功能及逐字符 Unicode 写入修复已实现，最终四份自动报告通过，用户实机验收完成 | `dist/Suisheng-stage3-0.3.1-win-x64` |
+| 第四阶段 0.4.0 | 当前版本；正式安装、覆盖升级、卸载、首次引导、手动更新说明和安全诊断已实现，实际安装生命周期通过，删除数据分支未验证 | `dist/Suisheng-Setup-0.4.0-win-x64.exe`；`dist/Suisheng-stage4-0.4.0-win-x64` |
 
-真实 DeepSeek 结果来自用户在本机手动配置和操作，API Key 未通过聊天、日志或报告传递；本地回环契约测试与实网结果分别记录。0.3.0 的真实连接、三点优化、待确认预览和不自动写入通过，但确认写入记事本失败；0.3.1 的 Debug 和 Release DLL 真实记事本自动接收校验通过，用户随后明确确认实机验收完成。B2 休眠唤醒后仍录音是已复现、尚未解决、按用户要求暂缓的已知问题。真人设备、真实聊天软件、游戏、自启动重登、多显示器及 Windows 10 等项目也不能描述为全部验收。
+真实 DeepSeek 结果来自用户在本机手动配置和操作，API Key 未通过聊天、日志或报告传递；本地回环契约测试与实网结果分别记录。0.3.0 的真实连接、三点优化、待确认预览和不自动写入通过，但确认写入记事本失败；0.3.1 的 Debug 和 Release DLL 真实记事本自动接收校验通过，用户随后明确确认实机验收完成。第四阶段安装验收不替代真实目标应用兼容测试。B2 休眠唤醒后仍录音是已复现、尚未解决、按用户要求暂缓的已知问题。真人设备、真实聊天软件、游戏、自启动重登、多显示器及 Windows 10 等项目也不能描述为全部验收。
 
 ## 给后续开发者的直接指令
 
-请先阅读 `原始需求.txt`、`tests/stage2-validation.json` 和 `tests/stage3-validation.json`，以实际源码及 JSON 测试报告为准。0.3.1 用户实机验收已完成，下一步是真实聊天软件和游戏普通输入区域的兼容验收。继续保留 B2 未解决状态。不得使用模拟识别、模拟 AI、空实现、TODO、回环结果或旧发布包结果冒充新功能通过。
+请先阅读 `原始需求.txt`、`tests/stage2-validation.json`、`tests/stage3-validation.json` 和 `tests/stage4-validation.json`，以实际源码及 JSON 测试报告为准。0.4.0 正式分发功能及保留数据的安装生命周期已验证，下一步是真实聊天软件和游戏普通输入区域的兼容验收。继续保留 B2 未解决状态。不得使用模拟识别、模拟 AI、空实现、TODO、回环结果或旧发布包结果冒充新功能通过；不得把静默安装、脚本静态检查或重跑通过扩大为所有交互和组合竞态通过。
 
 ## 运行与验证入口
 
-- 当前第三阶段发布程序：`dist/Suisheng-stage3-0.3.1-win-x64/Suisheng.exe`。这是 win-x64 self-contained 目录发布，包含 Base 模型和许可，不是正式安装包。
+- 当前正式安装包：`dist/Suisheng-Setup-0.4.0-win-x64.exe`。默认每用户安装到 `%LOCALAPPDATA%\Programs\Suisheng`，默认不要求管理员权限。
+- 当前免安装发布程序：`dist/Suisheng-stage4-0.4.0-win-x64/Suisheng.exe`。这是 win-x64 self-contained 目录发布，包含 Base 模型和许可，必须保留完整目录。
 - 当前源码：安装 .NET 10 SDK 后执行 `dotnet run --project src/Suisheng/Suisheng.csproj`，或双击 `运行当前源码.cmd`。
 - 核心及 Debug 实际桌面回归：执行 `tests/run-tests.cmd`。
-- 新 Release 构建：执行 `packaging/build.cmd`。
-- 新 Release 桌面回归：执行 `tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe tests/. --desktop --executable dist/Suisheng-stage3-0.3.1-win-x64/Suisheng.exe`。
-- 新 Release DLL 真实记事本接收回归：执行 `tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe tests/. --notepad-write --executable dist/Suisheng-stage3-0.3.1-win-x64/Suisheng.exe`。
-- 历史第一阶段程序：`运行第一阶段程序.cmd`，仅用于对照，不用于证明第二阶段功能。
+- 新 Release 自包含目录：执行 `packaging/build.cmd`。
+- 新 Release 和正式安装包：安装 Inno Setup 6 后执行 `packaging/build-installer.cmd`。
+- 新 Release 桌面回归：执行 `tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe tests/. --desktop --executable dist/Suisheng-stage4-0.4.0-win-x64/Suisheng.exe`。
+- 新 Release DLL 真实记事本接收回归：执行 `tests/bin/Debug/net10.0-windows/win-x64/Suisheng.Tests.exe tests/. --notepad-write --executable dist/Suisheng-stage4-0.4.0-win-x64/Suisheng.exe`。
+- 安装生命周期运行器：`tests/Stage4InstallerTests.ps1`，需要传入旧版验证安装包、新安装包、测试运行器和 tests 绝对路径。脚本会操作本软件启动项，必须保留其 `finally` 恢复逻辑；真实用户数据存在时不要执行主动删除分支。
+- 历史第一阶段程序：`运行第一阶段程序.cmd`，仅用于对照，不用于证明后续阶段功能。
 
 ## 技术与目录
 
 - C#、.NET 10、WPF、win-x64；`UseWindowsForms=true` 用于托盘和显示器。
 - NAudio 2.2.1：16kHz / 16-bit / 单声道内存录音。
 - Whisper.net 1.8.1 + Runtime：真实本地 CPU 推理，默认 Base 模型。
-- `src/Suisheng`：当前 0.3.1 产品源码。
-- `tests`：真实本地推理、系统热键、UI Automation、SendInput、Win32 系统对话框、真实记事本接收及桌面生命周期测试。
-- `packaging/build.cmd`：当前第三阶段发布脚本，输出 `dist/Suisheng-stage3-0.3.1-win-x64`，不覆盖旧 stage1/stage2/0.3.0。
+- `src/Suisheng`：当前 0.4.0 产品源码。
+- `tests`：真实本地推理、系统热键、UI Automation、SendInput、Win32 系统对话框、真实记事本接收、桌面及安装生命周期测试。
+- `packaging/build.cmd`：当前第四阶段发布脚本，输出 `dist/Suisheng-stage4-0.4.0-win-x64`，不覆盖旧阶段目录。
+- `packaging/build-installer.cmd`：调用 Release 构建并查找 Inno Setup 6 编译器，生成 `dist/Suisheng-Setup-0.4.0-win-x64.exe`。
+- `packaging/Suisheng.iss`：固定 AppId、每用户安装、覆盖升级、启动项卸载清理及交互数据保留选择。
 - `packaging/licenses`：组件和模型许可文本。
 - `tests/stage2-validation.json`：第二阶段实际结果及用户 0.2.1 实机复测结论。
 - `tests/stage3-validation.json`：第三阶段实现、真实 DeepSeek 用户结果、0.3.1 修复和回归、未验证范围及已知限制。
+- `tests/stage4-validation.json`：第四阶段实现、发布物哈希、实际安装生命周期、自动化历史失败、未验证范围及已知限制。
 
 主要模块：`SessionController` 协调任务状态；`AudioRecorder` 录音；`RecognitionService` 模型与本地识别；`TargetInputService` 捕获目标、验证及 Unicode 写入；`HotkeyService` 全局快捷键；`FloatingBall` 悬浮球；`SettingsStore` 设置；`TextProcessingService` 后处理；`AppearanceService` 图片导入和裁剪；`ThemeService` 主题；`HistoryStore` 可选历史。
 
@@ -182,11 +189,74 @@ Release 桌面第一次运行为 40 项通过、1 项失败，失败项是“确
 
 Release 文件版本为 0.3.1.0，应用 DLL SHA-256 为 `0e9e0d78ca087296793493cefaeff5e4b7f03f35cc7c5ac43618da7ec4d58668`；Base 模型大小为 147951465 字节，SHA-256 为 `60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe`，4 份许可文件已核验。已人工查看本阶段 Debug 和 Release 的 AI API、模板、浅色预览、深色界面及主界面截图。
 
+## 第四阶段：0.4.0 正式分发实现
+
+### 1. 首次运行引导
+
+- `OnboardingWindow` 是真实、可重新打开的非模态 WPF 窗口，共六页：麦克风、模型准备、全局快捷键、悬浮球、安全输入测试和可选 AI 数据发送。
+- 引导只在用户明确点击后测试麦克风或跳转设置，不自动录音、下载模型或发送 AI 请求。
+- `UserSettings.OnboardingCompleted` 持久化完成状态；旧 settings.json 缺少字段时按 false 兼容，但已有设置文件不会自动触发首次引导。
+- “完成引导”和“稍后完成”都会保存完成标记，避免每次启动重复弹出；任务忙碌时禁止关闭，避免设置写入竞态。
+- 模型页只报告文件是否存在，首次识别仍走原有 SHA-256 校验，不把文件存在当作模型有效。
+
+### 2. 手动更新和安全诊断
+
+- 帮助页明确当前没有在线更新服务，提供退出程序、运行新版安装包覆盖安装和保留用户数据的手动步骤，不制作虚假更新按钮。
+- `DiagnosticExporter` 使用白名单对象序列化，只导出应用和系统版本、架构、运行时、麦克风数量、模型存在性及位置类别、部分功能开关和启动项状态。
+- 模型位置只分为 `application-directory`、`default-user-data` 和 `user-selected-directory`，不导出实际完整路径。
+- 不导出音频、正文、历史、剪贴板、完整 API 请求、接口地址、AI 指令、替换表或密钥。
+- 用户在真实系统保存对话框主动选择位置后才写文件；先写 `.new` 再原子替换，避免留下部分诊断文件。
+
+### 3. 安装、升级和卸载
+
+- Inno Setup 6.7.3，固定 AppId，`PrivilegesRequired=lowest`，每用户安装到 `%LOCALAPPDATA%\Programs\Suisheng`，x64 自包含程序不需要另装 .NET。
+- 使用 `AppMutex=Local\Suisheng.Desktop.0.1` 和 `CloseApplications=yes` 处理运行中的程序；固定 AppId 支持同系列新版覆盖升级。
+- 开始菜单快捷方式默认创建，桌面图标任务默认不选中；实际生命周期测试使用 `/NOICONS`，未把快捷方式操作标记为已验收。
+- 卸载通过 `uninsdeletevalue` 清理 HKCU 中本软件的 `Suisheng` 启动项，不触碰其他启动项。
+- 交互卸载询问是否删除默认 `%LOCALAPPDATA%\Suisheng`；选择“是”才调用 `DelTree`，选择“否”保留设置、模型、历史、图片、AI 模板和 DPAPI 密钥。
+- 静默卸载默认保留用户数据。脚本不递归删除 `{app}`，也不删除用户自选模型目录或安装目录中的其他无关文件。
+- 旧版验证安装包由真实 0.3.1 Release 构建生成，再使用最终 0.4.0 安装包覆盖升级；不是用旧包测试结果证明新版通过。
+
+### 4. 最终自动回归和实际安装生命周期
+
+主要不同报告合计 195 项次通过，0 项未通过；已安装桌面是另一环境的重复回归，安装生命周期单独记录，不重复累计。
+
+| 范围 | 通过 | 未通过 | 报告 |
+| --- | ---: | ---: | --- |
+| 核心：原第三阶段 102 项 + 第四阶段 5 项 | 107 | 0 | `tests/test-results.json` |
+| Debug 完整桌面及首次引导、帮助、诊断 | 42 | 0 | `tests/desktop-results.json` |
+| 0.4.0 Release 完整桌面及 Base 模型校验 | 44 | 0 | `tests/desktop-release-results.json` |
+| 已安装 0.4.0 完整桌面回归 | 44 | 0 | `tests/installed-desktop-results.json` |
+| 0.4.0 Release DLL 真实记事本接收 | 2 | 0 | `tests/notepad-write-release-results.json` |
+| 安装、升级、卸载生命周期 | 6 | 0 | `tests/installer-results.json`，另有 1 项未验证 |
+
+实际生命周期使用独立 `tests/installer-validation-*` 目录和隔离 `SUISHENG_DATA_DIRECTORY`：先静默安装 0.3.1，检查文件版本 0.3.1.0，再覆盖升级 0.4.0 并检查 0.4.0.0；安装目录额外用户文件和外部目录文件均保留。随后对实际安装程序完成 44 项桌面回归，再以最小参数 `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART` 卸载。
+
+真实 `%LOCALAPPDATA%\Suisheng` 已存在设置、模型和 DPAPI 密钥。测试只比较前后相对路径、长度和 SHA-256 指纹是否一致，不读取到报告或展示正文和密钥；最终用户数据未变化。测试前保存用户原启动项原始值和值类型，验证卸载清理后在 `finally` 中恢复并确认成功。
+
+“卸载时主动选择删除用户数据”在 `tests/installer-results.json` 中为 `passed=null`、`status=unverified`。为避免删除真实设置、模型和密钥，本次只执行保留分支，删除分支仅做脚本静态检查，不能写成通过。
+
+### 5. 自动化历史失败与最终状态
+
+- 系统诊断保存对话框早期多次找不到文件名编辑框；最终通过前台激活、Alt+N、Ctrl+A、SendKeys 输入路径和真实鼠标点击保存。完成提示框自动识别曾返回 false，最终断言以对话框关闭和实际 JSON 文件有效为准。
+- 一次安装后桌面回归在 `Stage2DesktopTests.SelectComboItem` 中找不到“跟随 Windows 系统”；当时卸载还受旧 `/LOG` 参数影响。修正后最终完整重跑 44/44 通过，不据此宣称所有 UI 自动化竞态均已验证。
+- 卸载器早期使用 `/NOCANCEL` 或 `/LOG` 返回 1 且未真正完成；最终移除这两个卸载参数后返回 0，并实际确认程序删除、启动项清理和数据保留。
+- 第四阶段 Debug 和 Release 截图分别使用 `stage4` 与 `stage4-release` 前缀，已安装程序报告单独保存，避免被后续目录回归覆盖。第三阶段历史截图保持原证据，不用第四阶段截图替代。
+
+### 6. 发布物和校验值
+
+- 正式安装包：`dist/Suisheng-Setup-0.4.0-win-x64.exe`，183816633 字节，文件版本 0.4.0.0。
+- 安装包 SHA-256：`3f41da28ce7a7f83490a0e521b580be2374f188e251a820bb8123ccdbb1e193d`。
+- 自包含目录：`dist/Suisheng-stage4-0.4.0-win-x64`，程序文件版本 0.4.0.0。
+- 应用 DLL SHA-256：`65f3698edb880247a7b27624921a1f74c9f3197fde789cb09a73f9d461dcf656`。
+- Base 模型：147951465 字节，SHA-256 为 `60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe`；4 份许可文件已核验。
+- 安装包和应用未做代码签名及 SmartScreen 分发验收。
+
 ## 后续更新计划
 
 1. **真实聊天与游戏兼容**：使用无敏感测试内容验证用户指定聊天软件和游戏普通输入区域，覆盖窗口模式、权限、输入法和焦点；不自动发送或提交，不绕过反作弊或安全边界。无法可靠写入时保留结果供复制。
-2. **剩余实机与兼容验收**：补真人设备、自启动重登、多显示器、Windows 10 等；B2 按用户当前决定保持暂缓，不擅自继续排查。
-3. **正式分发阶段**：在功能验收后实现安装、升级、卸载、启动项清理及用户选择是否保留设置和模型；补充首次引导、手动更新说明和不包含敏感内容的诊断导出。
+2. **剩余实机与兼容验收**：补真人设备、自启动重登、多显示器、Windows 10、交互安装向导、快捷方式和“应用和功能”卸载等；B2 按用户当前决定保持暂缓，不擅自继续排查。
+3. **分发补充验收**：如用户明确提供隔离测试数据，可单独验证主动删除用户数据分支；不要为测试删除真实设置、模型或 DPAPI 密钥。根据实际分发需求评估代码签名。
 4. **后续可选增强**：根据真实需求评估云端语音识别、流式预览、GPU、动态悬浮球和在线更新。只有实际实现并验证的功能才标记支持；云端识别与 AI 优化分别配置、分别说明数据发送范围。
 
 每个阶段均需同步更新源码、实际测试 JSON、交接文档和发布物；不得只更新界面或文档宣称完成。

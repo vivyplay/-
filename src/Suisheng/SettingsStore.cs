@@ -47,6 +47,7 @@ public sealed class UserSettings
     public string AiInstructions { get; set; } = "纠正识别错误，保留原意。";
     public string AiStrength { get; set; } = "balanced";
     public bool AiAllowExpansion { get; set; }
+    public bool OnboardingCompleted { get; set; }
     public UserSettings Clone() => (UserSettings)MemberwiseClone();
 }
 
@@ -62,6 +63,7 @@ public sealed class SettingsStore
         }
     }
     private readonly string path;
+    public bool Exists => File.Exists(path);
     public string? LoadWarning { get; private set; }
     public SettingsStore(string? root = null) => path = Path.Combine(root ?? DataDirectory, "settings.json");
 

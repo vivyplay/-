@@ -7,6 +7,6 @@
   {
     "test": "记事本完整 Unicode 实际接收",
     "passed": true,
-    "detail": "提交=True；预期=1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。；实际=1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。；文件=C:\\Users\\23309\\Documents\\Qoder\\2026-11-17\\59db6f65\\tests\\notepad-write-74ae8e9f068942e6b1059f3bec3141f9.txt；程序集=C:\\Users\\23309\\Documents\\Qoder\\2026-11-17\\59db6f65\\dist\\Suisheng-stage3-0.3.1-win-x64\\Suisheng.dll"
+    "detail": "提交=True；预期=1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。；实际=1. 明天上午十点召开产品会议；2. 讨论项目进度和目前存在的问题；3. 确定后续工作安排。；文件=C:\\Users\\23309\\Documents\\Qoder\\2026-11-17\\59db6f65\\tests\\notepad-write-3e4eda4b29ac42ffb4f32453bcd3f8b9.txt；程序集=C:\\Users\\23309\\Documents\\Qoder\\2026-11-17\\59db6f65\\dist\\Suisheng-stage4-0.4.0-win-x64\\Suisheng.dll"
   }
 ]

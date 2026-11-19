@@ -1,0 +1,38 @@
+﻿[
+    {
+        "test":  "隔离目录安装 0.3.1",
+        "passed":  true,
+        "detail":  "退出码=0"
+    },
+    {
+        "test":  "0.3.1 覆盖升级为 0.4.0",
+        "passed":  true,
+        "detail":  "退出码=0；保留无关文件=True"
+    },
+    {
+        "test":  "已安装 0.4.0 完整桌面回归",
+        "passed":  true,
+        "detail":  "断言=44；退出码=0"
+    },
+    {
+        "test":  "卸载程序文件并清理本软件启动项",
+        "passed":  true,
+        "detail":  "退出码=0；启动项已清理=True"
+    },
+    {
+        "test":  "卸载默认保留现有用户数据且不删其他文件",
+        "passed":  true,
+        "detail":  "用户数据未变化=True；其他文件保留=True"
+    },
+    {
+        "test":  "测试后恢复原开机启动项",
+        "passed":  true,
+        "detail":  "原启动项存在=True"
+    },
+    {
+        "test":  "卸载时主动选择删除用户数据",
+        "passed":  null,
+        "status":  "unverified",
+        "detail":  "为避免删除真实设置、模型和 DPAPI 密钥，本次只执行保留分支；删除分支仅做脚本静态检查。"
+    }
+]
